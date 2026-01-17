@@ -1,6 +1,6 @@
 from flask import Flask, render_template, Response, request
 import cv2
-import serial
+# import serial
 import threading
 import time
 import json
