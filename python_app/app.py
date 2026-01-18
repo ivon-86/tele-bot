@@ -10,7 +10,7 @@ app = Flask(__name__)
 camera = cv2.VideoCapture(0)  # веб камера
 
 controlX, controlY = 0, 0  # глобальные переменные положения джойстика с web-страницы
-
+servo_angle = 90  # НОВАЯ ГЛОБАЛЬНАЯ ПЕРЕМЕННАЯ: угол сервопривода (от 0 до 180, среднее 90)
 
 def getFramesGenerator():
     """ Генератор фреймов для вывода в веб-страницу, тут же можно поиграть с openCV"""
@@ -38,6 +38,17 @@ def index():
     """ Крутим html страницу """
     return render_template('index.html')
 
+
+@app.route('/servo_control')
+def servo_control():
+    """ Пришел запрос на управление сервоприводом """
+    global servo_angle
+    angle = request.args.get('angle')
+    if angle:
+        servo_angle = int(angle)
+        # Здесь потом добавим код для управления GPIO
+        print(f"Servo angle set to: {servo_angle}")  # для отладки
+    return '', 200, {'Content-Type': 'text/plain'}
 
 @app.route('/control')
 def control():
