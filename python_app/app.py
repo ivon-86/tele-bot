@@ -12,59 +12,20 @@ camera = cv2.VideoCapture(0)  # веб камера
 controlX, controlY = 0, 0  # глобальные переменные положения джойстика с web-страницы
 
 
-# def getFramesGenerator():
-#     """ Генератор фреймов для вывода в веб-страницу, тут же можно поиграть с openCV"""
-#     while True:
-#         time.sleep(0.01)    # ограничение fps (если видео тупит, можно убрать)
-#         success, frame = camera.read()  # Получаем фрейм с камеры
-#         if success:
-#             frame = cv2.resize(frame, (320, 240), interpolation=cv2.INTER_AREA)  # уменьшаем разрешение кадров (если видео тупит, можно уменьшить еще больше)
-#             # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)   # перевод изображения в градации серого
-#             # _, frame = cv2.threshold(frame, 127, 255, cv2.THRESH_BINARY)  # бинаризуем изображение
-#             _, buffer = cv2.imencode('.jpg', frame)
-#             yield (b'--frame\r\n'
-#                    b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-
 def getFramesGenerator():
-    """Генератор фреймов - простая рабочая версия"""
+    """ Генератор фреймов для вывода в веб-страницу, тут же можно поиграть с openCV"""
     while True:
-        success, frame = camera.read()
-        
+        time.sleep(0.01)    # ограничение fps (если видео тупит, можно убрать)
+        success, frame = camera.read()  # Получаем фрейм с камеры
         if success:
-            # Просто используем оригинальный кадр без обработки
-            # Или минимальную обработку
-            if frame is not None and frame.size > 0:
-                # Проверяем, что кадр не пустой
-                pass
-            else:
-                print("Empty frame received")
-                frame = np.zeros((480, 640, 3), dtype=np.uint8)
-            
-            # Добавляем информацию на кадр
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            cv2.putText(frame, timestamp, (10, 30), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-            cv2.putText(frame, f"Control: X={controlX:.1f}, Y={controlY:.1f}", 
-                       (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-            
-            # Уменьшаем для веб-потока
-            frame = cv2.resize(frame, (320, 240))
-            
-            # Кодируем
-            _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-        else:
-            # Тестовый кадр
-            frame = np.zeros((240, 320, 3), dtype=np.uint8)
-            cv2.rectangle(frame, (0, 0), (320, 240), (100, 50, 0), -1)
-            cv2.putText(frame, "TEST PATTERN", (70, 120), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+            frame = cv2.resize(frame, (320, 240), interpolation=cv2.INTER_AREA)  # уменьшаем разрешение кадров (если видео тупит, можно уменьшить еще больше)
+            # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)   # перевод изображения в градации серого
+            # _, frame = cv2.threshold(frame, 127, 255, cv2.THRESH_BINARY)  # бинаризуем изображение
             _, buffer = cv2.imencode('.jpg', frame)
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-        
-        time.sleep(0.033)
+
+
 
 @app.route('/video_feed')
 def video_feed():
