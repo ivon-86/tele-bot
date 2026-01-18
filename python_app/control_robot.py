@@ -15,7 +15,7 @@ class ControlServoCam:
     Использует software PWM, так как аппаратный ШИМ занят под двигатели
     """
     
-    def __init__(self, servo_pin=18, min_angle=0, max_angle=180, default_angle=90):
+    def __init__(self, servo_pin=24, min_angle=0, max_angle=180, default_angle=90):
         """
         Инициализация сервопривода камеры
         
@@ -178,7 +178,7 @@ if __name__ == "__main__":
     try:
         # Создаем экземпляр сервопривода
         # Примечание: на Raspberry Pi нужно запускать с правами sudo
-        servo_cam = ControlServoCam(servo_pin=18)
+        servo_cam = ControlServoCam(servo_pin=24)
         
         # Тестируем основные функции
         servo_cam.set_angle(0)
@@ -194,7 +194,7 @@ if __name__ == "__main__":
         time.sleep(1)
         
         # Можно протестировать прогон по диапазону (раскомментировать при необходимости)
-        # servo_cam.sweep_test(delay=0.1)
+        servo_cam.sweep_test(delay=0.1)
         
     except KeyboardInterrupt:
         print("\nПрограмма прервана пользователем")
