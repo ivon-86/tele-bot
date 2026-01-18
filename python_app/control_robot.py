@@ -172,7 +172,7 @@ class ControlEncoders:
     def cleanup(self):
         print("Encoders controller cleaned up")
 
-
+#fjghdfghfjdgdf
 # Пример использования (для тестирования)
 if __name__ == "__main__":
     try:
