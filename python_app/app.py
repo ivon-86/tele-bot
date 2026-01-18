@@ -26,13 +26,19 @@ controlX, controlY = 0, 0  # глобальные переменные поло�
 #                    b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
 
 def getFramesGenerator():
-    """Генератор фреймов с улучшенной обработкой"""
+    """Генератор фреймов - простая рабочая версия"""
     while True:
         success, frame = camera.read()
         
         if success:
-            # Улучшаем изображение
-            frame = cv2.convertScaleAbs(frame, alpha=1.3, beta=30)
+            # Просто используем оригинальный кадр без обработки
+            # Или минимальную обработку
+            if frame is not None and frame.size > 0:
+                # Проверяем, что кадр не пустой
+                pass
+            else:
+                print("Empty frame received")
+                frame = np.zeros((480, 640, 3), dtype=np.uint8)
             
             # Добавляем информацию на кадр
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -49,8 +55,11 @@ def getFramesGenerator():
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
         else:
-            # Черный кадр при ошибке
+            # Тестовый кадр
             frame = np.zeros((240, 320, 3), dtype=np.uint8)
+            cv2.rectangle(frame, (0, 0), (320, 240), (100, 50, 0), -1)
+            cv2.putText(frame, "TEST PATTERN", (70, 120), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
             _, buffer = cv2.imencode('.jpg', frame)
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
