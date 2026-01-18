@@ -29,8 +29,8 @@ servo_cam = None
 if SERVO_AVAILABLE:
     try:
         # Настройки сервопривода (можно вынести в аргументы командной строки)
-        SERVO_PIN = 18  # GPIO пин для сервопривода
-        servo_cam = ControlServoCam(servo_pin=SERVO_PIN)
+        SERVO_PIN = 24  # GPIO пин для сервопривода
+        servo_cam = ControlServoCam(servo_pin=args.servo-pin)
         print("Servo camera initialized successfully")
     except Exception as e:
         print(f"Error initializing servo camera: {e}")
@@ -147,7 +147,7 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--port', type=int, default=5000, help="Running port")
     parser.add_argument("-i", "--ip", type=str, default='127.0.0.1', help="Ip address")
     parser.add_argument('-s', '--serial', type=str, default='/dev/ttyUSB0', help="Serial port")
-    parser.add_argument('--servo-pin', type=int, default=18, help="GPIO pin for servo camera")
+    parser.add_argument('--servo-pin', type=int, default=24, help="GPIO pin for servo camera")
     args = parser.parse_args()
 
     try:
