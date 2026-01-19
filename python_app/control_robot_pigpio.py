@@ -1,4 +1,4 @@
-# control_robot_pigpio.py - улучшенная версия
+# control_robot_pigpio.py - исправленная версия
 import pigpio
 import time
 import math
@@ -89,63 +89,63 @@ class ControlServoCam:
             return False
     
     def _move_smoothly(self, target_angle, duration=None):
-    """Плавное движение к целевому углу с высокой точностью"""
-    if self.is_moving:
-        print("Servo is already moving")
-        return False
-    
-    self.is_moving = True
-    
-    try:
-        start_angle = self.current_angle
-        angle_diff = target_angle - start_angle
+        """Плавное движение к целевому углу с высокой точностью"""
+        if self.is_moving:
+            print("Servo is already moving")
+            return False
         
-        # Автоматический расчет длительности
-        if duration is None:
-            # Более плавное вычисление времени
-            base_time = 0.05  # уменьшили базовую задержку
-            # Медленнее на малые расстояния, быстрее на большие
-            proportional_time = abs(angle_diff) / 180.0 * 0.6  # увеличено до 0.6сек
-            duration = base_time + proportional_time
-            duration = duration / self.speed_factor
+        self.is_moving = True
         
-        # Ограничиваем длительность
-        duration = max(0.03, min(duration, 1.5))  # уменьшили максимум
-        
-        # Больше шагов для большей плавности
-        steps = max(2, int(duration * 150))  # 150 шагов в секунду!
-        step_time = duration / steps
-        
-        # Используем smoothstep для более естественного движения
-        for i in range(steps + 1):
-            t = i / steps
-            # Smoothstep функция - очень плавное ускорение и замедление
-            t = t * t * (3 - 2 * t)
+        try:
+            start_angle = self.current_angle
+            angle_diff = target_angle - start_angle
             
-            # Дополнительно можно добавить небольшие easing эффекты
-            # t = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t  # easeInOutQuad
+            # Автоматический расчет длительности
+            if duration is None:
+                # Более плавное вычисление времени
+                base_time = 0.05  # уменьшили базовую задержку
+                # Медленнее на малые расстояния, быстрее на большие
+                proportional_time = abs(angle_diff) / 180.0 * 0.6  # увеличено до 0.6сек
+                duration = base_time + proportional_time
+                duration = duration / self.speed_factor
             
-            current_angle = start_angle + angle_diff * t
+            # Ограничиваем длительность
+            duration = max(0.03, min(duration, 1.5))  # уменьшили максимум
             
-            # Высокая точность импульса
-            pulse_width = self._angle_to_pulsewidth(current_angle)
-            self.pi.set_servo_pulsewidth(self.servo_pin, pulse_width)
+            # Больше шагов для большей плавности
+            steps = max(2, int(duration * 150))  # 150 шагов в секунду!
+            step_time = duration / steps
             
-            if i < steps:
-                # Микро-задержки для максимальной плавности
-                time.sleep(step_time)
-        
-        self.current_angle = target_angle
-        
-        print(f"Servo ultra smooth: {start_angle:.2f}° → {target_angle:.2f}° "
-              f"in {duration:.3f}s ({steps} steps)")
-        return True
-        
-    except Exception as e:
-        print(f"Error in ultra smooth move: {e}")
-        return False
-    finally:
-        self.is_moving = False
+            # Используем smoothstep для более естественного движения
+            for i in range(steps + 1):
+                t = i / steps
+                # Smoothstep функция - очень плавное ускорение и замедление
+                t = t * t * (3 - 2 * t)
+                
+                # Дополнительно можно добавить небольшие easing эффекты
+                # t = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t  # easeInOutQuad
+                
+                current_angle = start_angle + angle_diff * t
+                
+                # Высокая точность импульса
+                pulse_width = self._angle_to_pulsewidth(current_angle)
+                self.pi.set_servo_pulsewidth(self.servo_pin, pulse_width)
+                
+                if i < steps:
+                    # Микро-задержки для максимальной плавности
+                    time.sleep(step_time)
+            
+            self.current_angle = target_angle
+            
+            print(f"Servo ultra smooth: {start_angle:.2f}° → {target_angle:.2f}° "
+                  f"in {duration:.3f}s ({steps} steps)")
+            return True
+            
+        except Exception as e:
+            print(f"Error in ultra smooth move: {e}")
+            return False
+        finally:
+            self.is_moving = False
     
     def set_angle_proportional(self, value, min_value=0.0, max_value=100.0):
         """
