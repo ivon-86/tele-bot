@@ -48,74 +48,119 @@
 	}
 	
 	/* НОВЫЕ СТИЛИ ДЛЯ ПОЛЗУНКА */
-	#servoContainer {
-		position: absolute;
-		bottom: 0%;
-		left: 0%;
-		width: max(10vw, 10vh);
-		height: max(33vw, 33vh);
-		max-width: 120px;
-		max-height: 400px;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		padding: 20px;
-		background-color: rgba(0, 0, 0, 0.5);
-		border-radius: 15px;
-		margin: 20px;
-	}
-	
-	#servoSlider {
-		width: 100%;
-		height: 80%;
-		-webkit-appearance: slider-vertical;
-		appearance: slider-vertical;
-		writing-mode: bt-lr;
-		direction: rtl;
-		background: linear-gradient(to top, #ff0000, #00ff00);
-		border-radius: 10px;
-		outline: none;
-	}
-	
-	#servoSlider::-webkit-slider-thumb {
-		-webkit-appearance: none;
-		appearance: none;
-		width: 40px;
-		height: 40px;
-		border-radius: 50%;
-		background: #ffffff;
-		cursor: pointer;
-		border: 3px solid #333333;
-		box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-	}
-	
-	#servoSlider::-moz-range-thumb {
-		width: 40px;
-		height: 40px;
-		border-radius: 50%;
-		background: #ffffff;
-		cursor: pointer;
-		border: 3px solid #333333;
-		box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-	}
-	
-	#servoValue {
-		color: white;
-		font-family: Arial, sans-serif;
-		font-size: 24px;
-		font-weight: bold;
-		margin-top: 15px;
-		text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-	}
-	
-	#servoLabel {
-		color: white;
-		font-family: Arial, sans-serif;
-		font-size: 16px;
-		margin-bottom: 15px;
-		text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-	}
+	 #servoContainer {
+        position: absolute;
+        bottom: 0%;
+        left: 0%;
+        width: max(15vw, 15vh);  /* Увеличили с 10vw до 15vw */
+        height: max(40vw, 40vh);  /* Увеличили с 33vw до 40vw */
+        max-width: 150px;         /* Увеличили с 120px */
+        max-height: 500px;        /* Увеличили с 400px */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 25px;           /* Увеличили padding */
+        background-color: rgba(0, 0, 0, 0.6);
+        border-radius: 20px;     /* Увеличили радиус */
+        margin: 20px;
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+    }
+    
+    #servoSlider {
+        width: 100%;
+        height: 85%;            /* Увеличили высоту */
+        -webkit-appearance: slider-vertical;
+        appearance: slider-vertical;
+        writing-mode: bt-lr;
+        direction: rtl;
+        background: linear-gradient(to top, #ff0000, #ffff00, #00ff00);
+        border-radius: 15px;
+        outline: none;
+        cursor: pointer;
+    }
+    
+    #servoSlider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 50px;            /* Увеличили с 40px */
+        height: 50px;           /* Увеличили с 40px */
+        border-radius: 50%;
+        background: radial-gradient(circle, #ffffff, #cccccc);
+        cursor: grab;
+        border: 4px solid #333333;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
+        transition: transform 0.1s;
+    }
+    
+    #servoSlider::-webkit-slider-thumb:active {
+        cursor: grabbing;
+        transform: scale(1.1);
+        background: radial-gradient(circle, #ffffff, #aaaaaa);
+    }
+    
+    #servoSlider::-moz-range-thumb {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: radial-gradient(circle, #ffffff, #cccccc);
+        cursor: pointer;
+        border: 4px solid #333333;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
+    }
+    
+    #servoValue {
+        color: white;
+        font-family: Arial, sans-serif;
+        font-size: 28px;        /* Увеличили шрифт */
+        font-weight: bold;
+        margin-top: 20px;
+        text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.9);
+        padding: 5px 15px;
+        background-color: rgba(0, 0, 0, 0.5);
+        border-radius: 10px;
+    }
+    
+    #servoLabel {
+        color: white;
+        font-family: Arial, sans-serif;
+        font-size: 20px;        /* Увеличили шрифт */
+        margin-bottom: 20px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        font-weight: bold;
+    }
+    
+    /* Стили для кнопок точной регулировки */
+    .servo-fine-btn {
+        padding: 8px 15px;
+        font-size: 14px;
+        border: none;
+        border-radius: 8px;
+        background: linear-gradient(to bottom, #444, #222);
+        color: white;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 3px 5px rgba(0,0,0,0.3);
+    }
+    
+    .servo-fine-btn:hover {
+        background: linear-gradient(to bottom, #555, #333);
+        transform: translateY(-2px);
+    }
+    
+    .servo-fine-btn:active {
+        transform: translateY(1px);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+    
+    /* Контейнер для кнопок */
+    .fine-controls {
+        margin-top: 15px;
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        width: 100%;
+    }
 	
 	</style>
 </head>
@@ -161,24 +206,49 @@
     var servoSlider = document.getElementById('servoSlider');
     var servoValue = document.getElementById('servoValue');
     
-    // Флаги для управления
+    // Переменные для плавного управления
     var isDragging = false;
     var lastSendTime = 0;
-    var sendInterval = 50; // ms между отправками
+    var sendInterval = 30; // Уменьшили интервал отправки
+    var lastSentAngle = null;
+    var angleBuffer = [];
+    var bufferSize = 3;
+    
+    // Функция для плавной фильтрации значений
+    function smoothValue(newValue, buffer) {
+        buffer.push(newValue);
+        if (buffer.length > bufferSize) {
+            buffer.shift();
+        }
+        
+        // Среднее значение из буфера
+        var sum = buffer.reduce((a, b) => a + b, 0);
+        return sum / buffer.length;
+    }
     
     // Функция для плавного управления сервой
     function controlServoSmooth(angle, immediate = false) {
         var currentTime = Date.now();
         
-        // Если не dragging и не immediate, отправляем реже
-        if (!isDragging && !immediate && (currentTime - lastSendTime < 500)) {
+        // Пропускаем слишком частые отправки
+        if (!immediate && (currentTime - lastSendTime < sendInterval)) {
+            return;
+        }
+        
+        // Применяем сглаживание при перетаскивании
+        if (isDragging) {
+            angle = smoothValue(angle, angleBuffer);
+        }
+        
+        // Отправляем только если угол изменился достаточно
+        if (lastSentAngle !== null && Math.abs(angle - lastSentAngle) < 0.3 && !immediate) {
             return;
         }
         
         var xhttp = new XMLHttpRequest();
-        var url = "servo_control?angle=" + angle.toFixed(1);
+        var url = "servo_control?angle=" + angle.toFixed(2); // 2 знака после запятой!
         
-        // При перетаскивании используем плавное движение,
+        // При перетаскивании используем плавное движение
         // при отпускании - быстрое финальное позиционирование
         if (isDragging) {
             url += "&smooth=true";
@@ -190,86 +260,159 @@
         xhttp.send();
         
         lastSendTime = currentTime;
+        lastSentAngle = angle;
+        
+        // Обновляем отображение с большей точностью
+        servoValue.textContent = angle.toFixed(1) + '°';
     }
     
-    // Альтернативно: пропорциональное управление
-    function controlServoProportional(value) {
-        var xhttp = new XMLHttpRequest();
-        xhttp.open("GET", "servo_control_proportional?value=" + value.toFixed(1), true);
-        xhttp.send();
-    }
-    
-    // События ползунка
+    // События ползунка для мыши
     servoSlider.addEventListener('mousedown', function() {
         isDragging = true;
+        angleBuffer = []; // Очищаем буфер при начале перетаскивания
     });
     
-    servoSlider.addEventListener('touchstart', function() {
-        isDragging = true;
-    });
-    
-    servoSlider.addEventListener('input', function() {
-        var angle = parseFloat(this.value);
-        servoValue.textContent = angle.toFixed(1) + '°';
-        
-        // При перетаскивании отправляем часто с плавным движением
+    servoSlider.addEventListener('mousemove', function(e) {
         if (isDragging) {
-            controlServoSmooth(angle, false);
+            // Получаем более точное значение на основе позиции мыши
+            var rect = this.getBoundingClientRect();
+            var percentage = 1 - ((e.clientY - rect.top) / rect.height);
+            percentage = Math.max(0, Math.min(1, percentage));
+            var preciseAngle = percentage * 180;
+            
+            // Устанавливаем значение слайдера
+            this.value = preciseAngle;
+            
+            // Отправляем плавно
+            controlServoSmooth(preciseAngle, false);
+        }
+    });
+    
+    servoSlider.addEventListener('mouseup', function() {
+        if (isDragging) {
+            isDragging = false;
+            // Финальная точная установка
+            controlServoSmooth(parseFloat(this.value), true);
+        }
+    });
+    
+    // События для тач-устройств
+    servoSlider.addEventListener('touchstart', function(e) {
+        isDragging = true;
+        angleBuffer = [];
+        e.preventDefault(); // Предотвращаем прокрутку страницы
+    }, { passive: false });
+    
+    servoSlider.addEventListener('touchmove', function(e) {
+        if (isDragging) {
+            var rect = this.getBoundingClientRect();
+            var touch = e.touches[0];
+            var percentage = 1 - ((touch.clientY - rect.top) / rect.height);
+            percentage = Math.max(0, Math.min(1, percentage));
+            var preciseAngle = percentage * 180;
+            
+            this.value = preciseAngle;
+            controlServoSmooth(preciseAngle, false);
+            
+            e.preventDefault(); // Предотвращаем прокрутку страницы
+        }
+    }, { passive: false });
+    
+    servoSlider.addEventListener('touchend', function() {
+        if (isDragging) {
+            isDragging = false;
+            controlServoSmooth(parseFloat(this.value), true);
+        }
+    });
+    
+    // Обычный input (для клавиатуры и колесика мыши)
+    servoSlider.addEventListener('input', function() {
+        if (!isDragging) { // Если не перетаскиваем мышью/тачем
+            controlServoSmooth(parseFloat(this.value), false);
         }
     });
     
     servoSlider.addEventListener('change', function() {
-        var angle = parseFloat(this.value);
-        servoValue.textContent = angle.toFixed(1) + '°';
-        
-        // При отпускании - финальная точная установка
-        controlServoSmooth(angle, true);
-        isDragging = false;
+        if (!isDragging) {
+            controlServoSmooth(parseFloat(this.value), true);
+        }
     });
     
-    // Для touch устройств
-    servoSlider.addEventListener('touchend', function() {
-        var angle = parseFloat(this.value);
-        controlServoSmooth(angle, true);
-        isDragging = false;
-    });
-    
-    // Дополнительно: можно добавить кнопки для точной регулировки
+    // Дополнительно: улучшаем кнопки точной регулировки
     document.addEventListener('DOMContentLoaded', function() {
-        // Добавляем кнопки тонкой регулировки
         var servoContainer = document.getElementById('servoContainer');
         
+        // Улучшенные кнопки
         var fineControls = document.createElement('div');
+        fineControls.className = 'fine-controls';
         fineControls.innerHTML = `
-            <div style="margin-top: 10px; display: flex; justify-content: center; gap: 10px;">
-                <button id="servoMinus5" style="padding: 5px 10px;">-5°</button>
-                <button id="servoCenter" style="padding: 5px 10px;">90°</button>
-                <button id="servoPlus5" style="padding: 5px 10px;">+5°</button>
-            </div>
+            <button id="servoMinus1" class="servo-fine-btn" title="Точное уменьшение">
+                <span style="font-size: 18px;">-1°</span>
+            </button>
+            <button id="servoCenter" class="servo-fine-btn" title="Центр">
+                <span style="font-size: 18px;">90°</span>
+            </button>
+            <button id="servoPlus1" class="servo-fine-btn" title="Точное увеличение">
+                <span style="font-size: 18px;">+1°</span>
+            </button>
         `;
         servoContainer.appendChild(fineControls);
         
-        // Обработчики кнопок
-        document.getElementById('servoMinus5').addEventListener('click', function() {
+        // Обработчики для более точных кнопок
+        function makeFineAdjustment(delta) {
             var current = parseFloat(servoSlider.value);
-            var newAngle = Math.max(0, current - 5);
+            var newAngle = Math.max(0, Math.min(180, current + delta));
             servoSlider.value = newAngle;
-            servoValue.textContent = newAngle.toFixed(1) + '°';
             controlServoSmooth(newAngle, true);
+        }
+        
+        document.getElementById('servoMinus1').addEventListener('click', function() {
+            makeFineAdjustment(-1);
         });
         
         document.getElementById('servoCenter').addEventListener('click', function() {
             servoSlider.value = 90;
-            servoValue.textContent = '90.0°';
             controlServoSmooth(90, true);
         });
         
-        document.getElementById('servoPlus5').addEventListener('click', function() {
-            var current = parseFloat(servoSlider.value);
-            var newAngle = Math.min(180, current + 5);
-            servoSlider.value = newAngle;
-            servoValue.textContent = newAngle.toFixed(1) + '°';
-            controlServoSmooth(newAngle, true);
+        document.getElementById('servoPlus1').addEventListener('click', function() {
+            makeFineAdjustment(1);
+        });
+        
+        // Добавляем обработку клавиш клавиатуры
+        document.addEventListener('keydown', function(e) {
+            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+                var current = parseFloat(servoSlider.value);
+                
+                switch(e.key) {
+                    case 'ArrowUp':
+                    case 'w':
+                    case 'W':
+                        makeFineAdjustment(1);
+                        e.preventDefault();
+                        break;
+                    case 'ArrowDown':
+                    case 's':
+                    case 'S':
+                        makeFineAdjustment(-1);
+                        e.preventDefault();
+                        break;
+                    case 'Home':
+                        makeFineAdjustment(-current); // На минимум
+                        e.preventDefault();
+                        break;
+                    case 'End':
+                        makeFineAdjustment(180 - current); // На максимум
+                        e.preventDefault();
+                        break;
+                    case ' ':
+                    case 'Enter':
+                        servoSlider.value = 90;
+                        controlServoSmooth(90, true);
+                        e.preventDefault();
+                        break;
+                }
+            }
         });
     });
 	// Улучшенная отправка джойстика - только при изменении

@@ -89,63 +89,60 @@ class ControlServoCam:
             return False
     
     def _move_smoothly(self, target_angle, duration=None):
-    """Плавное движение к целевому углу с высокой точностью"""
-    if self.is_moving:
-        print("Servo is already moving")
-        return False
-    
-    self.is_moving = True
-    
-    try:
-        start_angle = self.current_angle
-        angle_diff = target_angle - start_angle
+        """Плавное движение к целевому углу"""
+        if self.is_moving:
+            print("Servo is already moving")
+            return False
         
-        # Автоматический расчет длительности
-        if duration is None:
-            # Более плавное вычисление времени
-            base_time = 0.05  # уменьшили базовую задержку
-            # Медленнее на малые расстояния, быстрее на большие
-            proportional_time = abs(angle_diff) / 180.0 * 0.6  # увеличено до 0.6сек
-            duration = base_time + proportional_time
-            duration = duration / self.speed_factor
+        self.is_moving = True
         
-        # Ограничиваем длительность
-        duration = max(0.03, min(duration, 1.5))  # уменьшили максимум
-        
-        # Больше шагов для большей плавности
-        steps = max(2, int(duration * 150))  # 150 шагов в секунду!
-        step_time = duration / steps
-        
-        # Используем smoothstep для более естественного движения
-        for i in range(steps + 1):
-            t = i / steps
-            # Smoothstep функция - очень плавное ускорение и замедление
-            t = t * t * (3 - 2 * t)
+        try:
+            start_angle = self.current_angle
+            angle_diff = target_angle - start_angle
             
-            # Дополнительно можно добавить небольшие easing эффекты
-            # t = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t  # easeInOutQuad
+            # Автоматический расчет длительности
+            if duration is None:
+                # Базовое время + пропорциональное разнице углов
+                base_time = 0.1  # базовая задержка
+                proportional_time = abs(angle_diff) / 180.0 * 0.4  # до 0.4сек на полный оборот
+                duration = base_time + proportional_time
+                duration = duration / self.speed_factor  # учитываем коэффициент скорости
             
-            current_angle = start_angle + angle_diff * t
+            # Ограничиваем минимальную и максимальную длительность
+            duration = max(0.05, min(duration, 2.0))
             
-            # Высокая точность импульса
-            pulse_width = self._angle_to_pulsewidth(current_angle)
-            self.pi.set_servo_pulsewidth(self.servo_pin, pulse_width)
+            # Количество шагов для плавности
+            steps = max(2, int(duration * 90))  # 90 шагов в секунду
+            step_time = duration / steps
             
-            if i < steps:
-                # Микро-задержки для максимальной плавности
-                time.sleep(step_time)
-        
-        self.current_angle = target_angle
-        
-        print(f"Servo ultra smooth: {start_angle:.2f}° → {target_angle:.2f}° "
-              f"in {duration:.3f}s ({steps} steps)")
-        return True
-        
-    except Exception as e:
-        print(f"Error in ultra smooth move: {e}")
-        return False
-    finally:
-        self.is_moving = False
+            # Плавная интерполяция (можно менять функцию интерполяции)
+            for i in range(steps + 1):
+                # Линейная интерполяция
+                t = i / steps
+                current_angle = start_angle + angle_diff * t
+                
+                # Можно использовать ease-in-out для более естественного движения: (можно закоментировать)
+                t = t * t * (3 - 2 * t)  # smoothstep
+                current_angle = start_angle + angle_diff * t
+                
+                pulse_width = self._angle_to_pulsewidth(current_angle)
+                self.pi.set_servo_pulsewidth(self.servo_pin, pulse_width)
+                
+                if i < steps:  # Не спим на последнем шаге
+                    time.sleep(step_time)
+            
+            # Фиксируем конечную позицию
+            self.current_angle = target_angle
+            
+            print(f"Servo smoothly moved: {start_angle:.1f}° → {target_angle:.1f}° "
+                  f"in {duration:.2f}s ({steps} steps)")
+            return True
+            
+        except Exception as e:
+            print(f"Error in smooth move: {e}")
+            return False
+        finally:
+            self.is_moving = False
     
     def set_angle_proportional(self, value, min_value=0.0, max_value=100.0):
         """
