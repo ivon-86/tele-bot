@@ -93,7 +93,7 @@ class ControlServoCam:
             self.current_angle = angle
 
             # Даем серве время на перемещение (50ms достаточно для большинства сервоприводов)
-            time.sleep(0.1)
+            #time.sleep(0.1)
 
             # ОТКЛЮЧАЕМ PWM для фиксации!
             self.pwm.ChangeDutyCycle(0)
