@@ -169,12 +169,25 @@
 	<a href="https://www.youtube.com/channel/UCHRTaqr8KSCfyo2_CLH-yfg"><img id="logo" src="/static/logo.png"></a>
 	
 	<!-- НОВЫЙ КОНТЕЙНЕР ДЛЯ ПОЛЗУНКА -->
-	<div id="servoContainer">
+	<!-- <div id="servoContainer">
 		<div id="servoLabel">Камера</div>
 		<input type="range" id="servoSlider" min="0" max="180" value="90" orient="vertical">
 		<div id="servoValue">90°</div>
-	</div>
-	
+	</div> -->
+	<div id="servoContainer">
+    <div id="servoLabel">Камера</div>
+    
+    <!-- Кастомный слайдер -->
+    <div id="customSliderWrapper" style="width: 100%; height: 85%; position: relative;">
+        <div id="servoTrack" style="width: 100%; height: 100%; background: linear-gradient(to top, #ff0000, #ffff00, #00ff00); border-radius: 15px; position: relative;">
+            <div id="servoHandle" style="width: 50px; height: 50px; background: radial-gradient(circle, #ffffff, #cccccc); border-radius: 50%; position: absolute; left: 50%; transform: translateX(-50%); cursor: grab; border: 4px solid #333333; box-shadow: 0 0 15px rgba(0, 0, 0, 0.7); transition: transform 0.1s; bottom: 50%;"></div>
+        </div>
+    </div>
+    
+    <div id="servoValue">90°</div>
+</div>
+
+
 	<div id="joyDiv"></div>
 	
 	<script type="text/javascript">
