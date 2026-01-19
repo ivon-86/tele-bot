@@ -121,7 +121,7 @@ class ControlServoCam:
         center_angle = (self.min_angle + self.max_angle) // 2
         return self.set_angle(center_angle)
     
-    def sweep_test(self, delay=0.5):
+    def sweep_test(self, delay=0.1):
         """
         Тестовый прогон сервопривода по всему диапазону
         
@@ -131,12 +131,12 @@ class ControlServoCam:
         print("Starting servo sweep test...")
         
         # От минимума до максимума
-        for angle in range(self.min_angle, self.max_angle + 1, 5):
+        for angle in range(self.min_angle, self.max_angle + 1, 1):
             self.set_angle(angle)
             time.sleep(delay)
         
         # От максимума до минимума
-        for angle in range(self.max_angle, self.min_angle - 1, -5):
+        for angle in range(self.max_angle, self.min_angle - 1, -1):
             self.set_angle(angle)
             time.sleep(delay)
         
@@ -182,16 +182,22 @@ if __name__ == "__main__":
         
         # Тестируем основные функции
         servo_cam.set_angle(0)
-        time.sleep(1)
+        time.sleep(4)
         
         servo_cam.set_angle(90)
-        time.sleep(1)
+        time.sleep(4)
         
         servo_cam.set_angle(180)
-        time.sleep(1)
+        time.sleep(4)
         
+        servo_cam.set_angle(70)
+        time.sleep(4)
+
+        servo_cam.set_angle(33)
+        time.sleep(4)
+
         servo_cam.center()
-        time.sleep(1)
+        time.sleep(4)
         
         # Можно протестировать прогон по диапазону (раскомментировать при необходимости)
         servo_cam.sweep_test(delay=0.1)
