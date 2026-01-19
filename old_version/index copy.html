@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>CVbot</title>
+	<script src="/static/joy.js"></script>
+	<style>
+	html{
+		width: 100%;
+		height: 100%;
+	}
+
+	body {
+		position:absolute; top:0; bottom:0; right:0; left:0;
+		margin: 0;
+		background-color: #000000;
+	}
+	
+	#videoContainer {
+		background-color: #00000000;
+	}
+	
+	#video {
+		width: 100vw;
+		height: 100vh;
+		display: block;
+		margin: auto;
+	}
+	
+	#logo {
+		width: 7%;
+		height: auto;
+		position: absolute;
+		padding: 0px;
+		top: 3%;
+		left: 1%;
+	}
+	
+	#joyDiv {
+		width: max(33vw, 33vh);
+		height: max(33vw, 33vh);
+		max-width: 400px;
+		max-height: 400px;
+		position: absolute;
+		bottom: 0%;
+		right: 0%;
+	}
+	
+	/* НОВЫЕ СТИЛИ ДЛЯ ПОЛЗУНКА */
+	#servoContainer {
+		position: absolute;
+		bottom: 0%;
+		left: 0%;
+		width: max(10vw, 10vh);
+		height: max(33vw, 33vh);
+		max-width: 120px;
+		max-height: 400px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 20px;
+		background-color: rgba(0, 0, 0, 0.5);
+		border-radius: 15px;
+		margin: 20px;
+	}
+	
+	#servoSlider {
+		width: 100%;
+		height: 80%;
+		-webkit-appearance: slider-vertical;
+		appearance: slider-vertical;
+		writing-mode: bt-lr;
+		direction: rtl;
+		background: linear-gradient(to top, #ff0000, #00ff00);
+		border-radius: 10px;
+		outline: none;
+	}
+	
+	#servoSlider::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		appearance: none;
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		background: #ffffff;
+		cursor: pointer;
+		border: 3px solid #333333;
+		box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+	}
+	
+	#servoSlider::-moz-range-thumb {
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		background: #ffffff;
+		cursor: pointer;
+		border: 3px solid #333333;
+		box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+	}
+	
+	#servoValue {
+		color: white;
+		font-family: Arial, sans-serif;
+		font-size: 24px;
+		font-weight: bold;
+		margin-top: 15px;
+		text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+	}
+	
+	#servoLabel {
+		color: white;
+		font-family: Arial, sans-serif;
+		font-size: 16px;
+		margin-bottom: 15px;
+		text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+	}
+	
+	</style>
+</head>
+<body>
+	<div id="videoContainer"><img id="video" src="{{ url_for('video_feed') }}"></div>
+	<a href="https://www.youtube.com/channel/UCHRTaqr8KSCfyo2_CLH-yfg"><img id="logo" src="/static/logo.png"></a>
+	
+	<!-- НОВЫЙ КОНТЕЙНЕР ДЛЯ ПОЛЗУНКА -->
+	<div id="servoContainer">
+		<div id="servoLabel">Камера</div>
+		<input type="range" id="servoSlider" min="0" max="180" value="90" orient="vertical">
+		<div id="servoValue">90°</div>
+	</div>
+	
+	<div id="joyDiv"></div>
+	
+	<script type="text/javascript">
+		// Джойстик
+		var joyParam = {
+			"title": "joystick", 
+			"autoReturnToCenter": true, 
+			"internalFillColor": "#FF0000", 
+			"externalStrokeColor": "#800000", 
+			"externalLineWidth": "5"
+		};
+		var joy = new JoyStick('joyDiv', joyParam);
+		
+		// Функция для управления роботом
+		function control(x, y){
+			var xhttp = new XMLHttpRequest();
+			xhttp.open("GET", "control?x=" + x +"&y="+y, true); 
+			xhttp.send();
+		}
+		
+		// Функция для управления сервоприводом
+		function controlServo(angle){
+			var xhttp = new XMLHttpRequest();
+			xhttp.open("GET", "servo_control?angle=" + angle, true); 
+			xhttp.send();
+		}
+		
+		// Ползунок сервопривода
+		var servoSlider = document.getElementById('servoSlider');
+		var servoValue = document.getElementById('servoValue');
+		
+		// Обновление значения при перемещении ползунка
+		servoSlider.addEventListener('input', function() {
+			var angle = this.value;
+			servoValue.textContent = angle + '°';
+			controlServo(angle);
+		});
+		
+		// Отправка значения при отпускании ползунка (для точной фиксации)
+		servoSlider.addEventListener('change', function() {
+			var angle = this.value;
+			servoValue.textContent = angle + '°';
+			controlServo(angle);
+		});
+		
+		// Периодическая отправка данных джойстика
+		setInterval(function(){
+			control(joy.GetX(), joy.GetY());
+		}, 50);
+		
+	</script>
+</body>
+</html>

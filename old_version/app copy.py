@@ -80,8 +80,6 @@ def control():
     return '', 200, {'Content-Type': 'text/plain'}
 
 
-
-
 @app.route('/servo_control')
 def servo_control():
     """ Пришел запрос на управление сервоприводом камеры """
@@ -89,25 +87,19 @@ def servo_control():
     
     try:
         angle_str = request.args.get('angle')
-        smooth_str = request.args.get('smooth', 'true')  # Новый параметр
-        
         if angle_str:
-            # Парсим угол как float для дробных значений
-            angle = float(angle_str)
-            
-            # Определяем, нужно ли плавное движение
-            smooth = smooth_str.lower() == 'true'
+            angle = int(angle_str)
             
             # Обновляем глобальную переменную
             servo_angle = angle
             
-            # Управляем сервоприводом
+            # Управляем сервоприводом (если доступен)
             if servo_cam:
-                success = servo_cam.set_angle(angle, smooth=smooth)
+                success = servo_cam.set_angle(angle)
                 if success:
-                    print(f"Servo camera angle set to: {angle:.1f}° (smooth: {smooth})")
+                    print(f"Servo camera angle set to: {angle}°")
                 else:
-                    print(f"Failed to set servo camera angle")
+                    print(f"Failed to set servo camera angle to: {angle}°")
             else:
                 # Режим симуляции
                 print(f"Servo camera (simulation) angle set to: {angle}°")
@@ -120,44 +112,6 @@ def servo_control():
         return 'Invalid angle value', 400
     except Exception as e:
         print(f"Error in servo_control: {e}")
-        return 'Internal server error', 500
-
-
-@app.route('/servo_control_proportional')
-def servo_control_proportional():
-    """
-    Управление сервой пропорционально значению (0-100)
-    Идеально для слайдера!
-    """
-    global servo_angle
-    
-    try:
-        value_str = request.args.get('value')
-        if value_str:
-            value = float(value_str)
-            
-            # Преобразуем значение 0-100 в угол 0-180
-            angle = (value / 100.0) * 180.0
-            
-            # Обновляем глобальную переменную
-            servo_angle = angle
-            
-            if servo_cam:
-                # Используем пропорциональное управление
-                success = servo_cam.set_angle_proportional(value, 0.0, 100.0)
-                if success:
-                    print(f"Servo set proportionally: value={value} → angle={angle:.1f}°")
-                else:
-                    print(f"Failed to set servo proportionally")
-            
-            return '', 200, {'Content-Type': 'text/plain'}
-        else:
-            return 'Missing value parameter', 400
-    
-    except ValueError:
-        return 'Invalid value', 400
-    except Exception as e:
-        print(f"Error in proportional control: {e}")
         return 'Internal server error', 500
 
 
