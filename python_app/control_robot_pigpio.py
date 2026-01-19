@@ -64,7 +64,7 @@ class ControlServoCam:
             self.current_angle = angle
             
             # Небольшая задержка для движения
-            time.sleep(0.2)
+            time.sleep(0.05)
             
             print(f"Servo (pigpio) angle set to: {angle}° (pulse: {pulse_width}µs)")
             return True
