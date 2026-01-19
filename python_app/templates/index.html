@@ -272,6 +272,25 @@
             controlServoSmooth(newAngle, true);
         });
     });
+	// Улучшенная отправка джойстика - только при изменении
+    var lastJoyX = null;
+    var lastJoyY = null;
+    var joySendInterval = 50; // ms
+    
+    function sendJoyDataIfChanged() {
+        var currentX = joy.GetX();
+        var currentY = joy.GetY();
+        
+        // Если значения изменились или это первая отправка
+        if (lastJoyX !== currentX || lastJoyY !== currentY || lastJoyX === null) {
+            control(currentX, currentY);
+            lastJoyX = currentX;
+            lastJoyY = currentY;
+        }
+    }
+    
+    // Запускаем проверку изменений джойстика
+    setInterval(sendJoyDataIfChanged, joySendInterval);
 </script>
 </body>
 </html>
