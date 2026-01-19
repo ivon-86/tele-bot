@@ -14,7 +14,7 @@ class ControlServoCam:
     """
     
     def __init__(self, servo_pin=18, min_angle=0, max_angle=180, 
-                 default_angle=90, min_pulse=500, max_pulse=2500):
+                 default_angle=90, min_pulse=500, max_pulse=2400):
         """
         Инициализация с pigpio
         
@@ -60,11 +60,19 @@ class ControlServoCam:
             
             # pigpio позволяет напрямую задать ширину импульса
             self.pi.set_servo_pulsewidth(self.servo_pin, pulse_width)
-            
+
+            # Задержка зависит от разницы углов
+            angle_diff = abs(angle - self.current_angle)
+            move_time = max(0.05, angle_diff / 180.0 * 0.5)  # 0.5сек на полный оборот
+            time.sleep(move_time)
+
             self.current_angle = angle
             
             # Небольшая задержка для движения
-            time.sleep(0.05)
+            #time.sleep(0.05)
+
+
+
             
             print(f"Servo (pigpio) angle set to: {angle}° (pulse: {pulse_width}µs)")
             return True
