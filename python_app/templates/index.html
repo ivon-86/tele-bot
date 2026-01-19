@@ -4,6 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>CVbot</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+	<meta name="mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script src="/static/joy.js"></script>
     <style>
     html{
@@ -653,6 +657,16 @@
         track.style.transition = 'opacity 0.3s ease';
         handle.style.transition = 'opacity 0.3s ease, transform 0.15s ease';
         
+		// Автоматически пытаемся войти в полноэкранный режим при загрузке
+		document.addEventListener('DOMContentLoaded', function() {
+			setTimeout(function() {
+				if (document.documentElement.requestFullscreen && 
+					!document.fullscreenElement && 
+					window.innerHeight < 500) { // Только если экран маленький (мобильный)
+					document.documentElement.requestFullscreen().catch(e => console.log(e));
+				}
+			}, 1000);
+		});
     </script>
 </body>
 </html>
