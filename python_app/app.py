@@ -5,6 +5,12 @@ import threading
 import time
 import json
 import argparse
+import atexit
+import signal
+import sys
+
+# Глобальный флаг для предотвращения двойной очистки
+_cleaning_up = False
 
 # Импортируем наш новый модуль
 try:
@@ -119,17 +125,36 @@ def servo_status():
 # Функция для очистки ресурсов при завершении
 def cleanup_resources():
     """Очистка ресурсов при завершении работы"""
-    print("Cleaning up resources...")
+    global _cleaning_up
+    
+    if _cleaning_up:
+        return  # Уже очищаемся
+    
+    _cleaning_up = True
+    print("\nCleaning up resources...")
     
     # Освобождаем камеру
-    if camera:
-        camera.release()
+    if 'camera' in globals() and camera:
+        try:
+            camera.release()
+        except:
+            pass
     
     # Очищаем сервопривод
-    if servo_cam:
-        servo_cam.cleanup()
+    if 'servo_cam' in globals() and servo_cam:
+        try:
+            servo_cam.cleanup()
+        except:
+            pass  # Игнорируем ошибки при завершении
     
     print("Resources cleaned up")
+
+
+def signal_handler(sig, frame):
+    """Обработчик сигналов"""
+    print(f"\nReceived signal {sig}, shutting down...")
+    cleanup_resources()
+    sys.exit(0)
 
 
 if __name__ == '__main__':
@@ -144,17 +169,19 @@ if __name__ == '__main__':
     # maxAbsSpeed = 100  # максимальное абсолютное отправляемое значение скорости
     # sendFreq = 10  # слать 10 пакетов в секунду
 
+    
+
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--port', type=int, default=5000, help="Running port")
     parser.add_argument("-i", "--ip", type=str, default='127.0.0.1', help="Ip address")
-    parser.add_argument('-s', '--serial', type=str, default='/dev/ttyUSB0', help="Serial port")
     parser.add_argument('--servo-pin', type=int, default=24, help="GPIO pin for servo camera")
     args = parser.parse_args()
 
     try:
-        # Регистрируем обработчик завершения
-        import atexit
+        # Регистрируем обработчики
         atexit.register(cleanup_resources)
+        signal.signal(signal.SIGINT, signal_handler)   # Ctrl+C
+        signal.signal(signal.SIGTERM, signal_handler)  # kill
         
         # serialPort = serial.Serial(args.serial, 9600)   # открываем uart
 
