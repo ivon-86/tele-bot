@@ -112,7 +112,7 @@ class ControlServoCam:
             duration = max(0.05, min(duration, 2.0))
             
             # Количество шагов для плавности
-            steps = max(2, int(duration * 100))  # 100 шагов в секунду
+            steps = max(2, int(duration * 50))  # 50 шагов в секунду
             step_time = duration / steps
             
             # Плавная интерполяция (можно менять функцию интерполяции)
@@ -121,7 +121,7 @@ class ControlServoCam:
                 t = i / steps
                 current_angle = start_angle + angle_diff * t
                 
-                # Можно использовать ease-in-out для более естественного движения:
+                # Можно использовать ease-in-out для более естественного движения: (можно закоментировать)
                 t = t * t * (3 - 2 * t)  # smoothstep
                 current_angle = start_angle + angle_diff * t
                 
