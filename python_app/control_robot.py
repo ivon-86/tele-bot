@@ -93,7 +93,7 @@ class ControlServoCam:
             self.current_angle = angle
 
             # Даем серве время на перемещение (50ms достаточно для большинства сервоприводов)
-            #time.sleep(0.1)
+            time.sleep(0.05)
 
             # ОТКЛЮЧАЕМ PWM для фиксации!
             self.pwm.ChangeDutyCycle(0)
@@ -194,17 +194,17 @@ if __name__ == "__main__":
         servo_cam.set_angle(180)
         time.sleep(4)
         
-        servo_cam.set_angle(70)
-        time.sleep(4)
+        # servo_cam.set_angle(70)
+        # time.sleep(4)
 
-        servo_cam.set_angle(33)
-        time.sleep(4)
+        # servo_cam.set_angle(33)
+        # time.sleep(4)
 
         servo_cam.center()
         time.sleep(4)
         
         # Можно протестировать прогон по диапазону (раскомментировать при необходимости)
-        servo_cam.sweep_test(delay=0.5)
+        servo_cam.sweep_test(delay=0.3)
         
     except KeyboardInterrupt:
         print("\nПрограмма прервана пользователем")
