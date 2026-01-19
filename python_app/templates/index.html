@@ -4,10 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>CVbot</title>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 	<meta name="mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
     <script src="/static/joy.js"></script>
     <style>
     html{
@@ -35,7 +35,7 @@
         object-fit: cover;
     }
     
-    #logo {
+    /* #logo {
         width: 7%;
         height: auto;
         position: absolute;
@@ -45,11 +45,11 @@
         filter: drop-shadow(0 0 5px rgba(255,255,255,0.5));
         transition: transform 0.3s;
         z-index: 100;
-    }
+    } */
     
-    #logo:hover {
+    /* #logo:hover {
         transform: scale(1.05);
-    }
+    } */
     
     #joyDiv {
         width: max(33vw, 33vh);
@@ -308,9 +308,9 @@
 </head>
 <body>
     <div id="videoContainer"><img id="video" src="{{ url_for('video_feed') }}"></div>
-    <a href="https://www.youtube.com/channel/UCHRTaqr8KSCfyo2_CLH-yfg" target="_blank">
+    <!-- <a href="https://www.youtube.com/channel/UCHRTaqr8KSCfyo2_CLH-yfg" target="_blank">
         <img id="logo" src="/static/logo.png" alt="CVbot Logo">
-    </a>
+    </a> -->
     
     <!-- Контейнер для сервопривода с кастомным слайдером -->
     <div id="servoContainer">
