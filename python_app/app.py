@@ -8,7 +8,8 @@ import argparse
 
 # Импортируем наш новый модуль
 try:
-    from control_robot import ControlServoCam
+    from control_robot_pigpio import ControlServoCam
+    #from control_robot import ControlServoCam
     SERVO_AVAILABLE = True
 except ImportError as e:
     print(f"Warning: Could not import control_robot module: {e}")
