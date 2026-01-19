@@ -122,8 +122,8 @@ class ControlServoCam:
                 current_angle = start_angle + angle_diff * t
                 
                 # Можно использовать ease-in-out для более естественного движения:
-                # t = t * t * (3 - 2 * t)  # smoothstep
-                # current_angle = start_angle + angle_diff * t
+                t = t * t * (3 - 2 * t)  # smoothstep
+                current_angle = start_angle + angle_diff * t
                 
                 pulse_width = self._angle_to_pulsewidth(current_angle)
                 self.pi.set_servo_pulsewidth(self.servo_pin, pulse_width)

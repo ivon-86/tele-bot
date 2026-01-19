@@ -37,7 +37,7 @@ if SERVO_AVAILABLE:
     try:
         # Настройки сервопривода (можно вынести в аргументы командной строки)
         SERVO_PIN = 24  # GPIO пин для сервопривода
-        servo_cam = ControlServoCam(servo_pin=SERVO_PIN, speed_factor=2.0)
+        servo_cam = ControlServoCam(servo_pin=SERVO_PIN, speed_factor=1.7)
         print("Servo camera initialized successfully")
     except Exception as e:
         print(f"Error initializing servo camera: {e}")
