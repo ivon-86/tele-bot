@@ -14,7 +14,7 @@ class ControlServoCam:
     """
     
     def __init__(self, servo_pin=18, min_angle=0, max_angle=180, 
-                 default_angle=90, min_pulse=400, max_pulse=2400):
+                 default_angle=90, min_pulse=600, max_pulse=2400):
         """
         Инициализация с pigpio
         
