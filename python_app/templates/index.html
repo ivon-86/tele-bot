@@ -58,66 +58,65 @@
         z-index: 10;
     }
     
-    /* Контейнер для сервопривода */
+    /* Контейнер для сервопривода - Уже и компактнее */
     #servoContainer {
         position: absolute;
         bottom: 0%;
         left: 0%;
-        width: max(15vw, 15vh);
-        height: max(40vw, 40vh);
-        max-width: 160px;
-        max-height: 500px;
+        width: max(12vw, 12vh);  /* Уже чем было */
+        height: max(35vw, 35vh);  /* Компактнее */
+        max-width: 120px;         /* Уже */
+        max-height: 450px;        /* Немного короче */
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: flex-start;
-        padding: 20px 15px;
-        background: linear-gradient(145deg, rgba(30,30,30,0.9), rgba(10,10,10,0.9));
-        border-radius: 20px;
-        margin: 20px;
+        padding: 15px 10px;       /* Меньше padding */
+        background: linear-gradient(145deg, rgba(40,20,20,0.9), rgba(20,5,5,0.9)); /* Красноватый фон */
+        border-radius: 12px;      /* Чуть квадратнее */
+        margin: 15px;
         box-shadow: 
-            0 10px 30px rgba(0,0,0,0.8),
-            inset 0 1px 0 rgba(255,255,255,0.1);
-        border: 1px solid rgba(255,255,255,0.1);
+            0 8px 20px rgba(0,0,0,0.8),
+            inset 0 1px 0 rgba(255,200,200,0.1); /* Красноватый инсет */
+        border: 1px solid rgba(255,100,100,0.2); /* Красная рамка */
         backdrop-filter: blur(5px);
         z-index: 10;
     }
     
     /* Заголовок сервы */
     #servoLabel {
-        color: #fff;
+        color: #ffcccc;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        font-size: 20px;
+        font-size: 18px;
         font-weight: 600;
-        margin-bottom: 25px;
+        margin-bottom: 20px;
         text-shadow: 0 2px 4px rgba(0,0,0,0.8);
         letter-spacing: 0.5px;
         text-align: center;
         width: 100%;
-        padding-bottom: 10px;
-        border-bottom: 2px solid rgba(255,255,255,0.2);
+        padding-bottom: 8px;
+        border-bottom: 2px solid rgba(255,100,100,0.3); /* Красная линия */
     }
     
-    /* Кастомный слайдер - трек */
+    /* Кастомный слайдер - трек - Уже и квадратнее */
     #servoTrack {
         width: 100%;
-        height: 280px;
+        height: 250px;            /* Компактнее */
         background: linear-gradient(to top, 
-            #ff0000 0%, 
-            #ff3300 20%, 
-            #ff6600 40%, 
-            #ffcc00 60%, 
-            #ffff00 70%, 
-            #ccff00 80%, 
-            #00ff00 100%);
-        border-radius: 15px;
+            #ff3333 0%,          /* Красный градиент */
+            #ff4444 20%, 
+            #ff5555 40%, 
+            #ff6666 60%, 
+            #ff7777 80%, 
+            #ff8888 100%);
+        border-radius: 10px;      /* Квадратнее */
         position: relative;
         box-shadow: 
-            inset 0 0 20px rgba(0,0,0,0.5),
-            0 5px 15px rgba(0,0,0,0.3);
+            inset 0 0 15px rgba(0,0,0,0.6),
+            0 4px 10px rgba(0,0,0,0.3);
         overflow: hidden;
         cursor: pointer;
-        border: 2px solid rgba(255,255,255,0.1);
+        border: 2px solid rgba(255,100,100,0.3); /* Красная рамка */
     }
     
     /* Индикаторы на треке */
@@ -128,28 +127,27 @@
         left: 0;
         right: 0;
         height: 1px;
-        background: rgba(255,255,255,0.3);
-        box-shadow: 0 50px 0 rgba(255,255,255,0.3),
-                    0 100px 0 rgba(255,255,255,0.3),
-                    0 150px 0 rgba(255,255,255,0.3),
-                    0 200px 0 rgba(255,255,255,0.3),
-                    0 250px 0 rgba(255,255,255,0.3);
+        background: rgba(255,200,200,0.4); /* Светло-красные линии */
+        box-shadow: 0 50px 0 rgba(255,200,200,0.4),
+                    0 100px 0 rgba(255,200,200,0.4),
+                    0 150px 0 rgba(255,200,200,0.4),
+                    0 200px 0 rgba(255,200,200,0.4);
     }
     
-    /* Ползунок кастомного слайдера */
+    /* Ползунок кастомного слайдера - КВАДРАТНЫЙ с закругленными углами */
     #servoHandle {
-        width: 56px;
-        height: 56px;
-        background: radial-gradient(circle at 30% 30%, #ffffff, #e0e0e0);
-        border-radius: 50%;
+        width: 52px;
+        height: 52px;
+        background: linear-gradient(145deg, #ffffff, #e6e6e6);
+        border-radius: 8px;       /* Квадратнее, но с закруглением */
         position: absolute;
         left: 50%;
         transform: translateX(-50%);
         cursor: grab;
-        border: 3px solid #333;
+        border: 2px solid #662222; /* Темно-красная рамка */
         box-shadow: 
-            0 0 20px rgba(0,0,0,0.8),
-            0 5px 15px rgba(0,0,0,0.5),
+            0 0 15px rgba(255,50,50,0.5), /* Красноватая тень */
+            0 4px 10px rgba(0,0,0,0.4),
             inset 0 2px 5px rgba(255,255,255,0.8);
         transition: all 0.15s ease;
         z-index: 2;
@@ -158,86 +156,86 @@
     
     #servoHandle:active {
         cursor: grabbing;
-        transform: translateX(-50%) scale(1.1);
+        transform: translateX(-50%) scale(1.08);
         box-shadow: 
-            0 0 25px rgba(0,0,0,0.9),
-            0 8px 20px rgba(0,0,0,0.6),
+            0 0 20px rgba(255,50,50,0.7),
+            0 6px 12px rgba(0,0,0,0.5),
             inset 0 1px 3px rgba(255,255,255,0.9);
-        border-color: #555;
+        border-color: #882222;
     }
     
-    /* Центральная точка на ползунке */
+    /* Центральная точка на ползунке - красная */
     #servoHandle::after {
         content: '';
         position: absolute;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        width: 12px;
-        height: 12px;
-        background: #333;
+        width: 10px;
+        height: 10px;
+        background: #cc2222; /* Красная точка */
         border-radius: 50%;
         box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
     }
     
     /* Отображение значения угла */
     #servoValue {
-        color: white;
+        color: #ffcccc;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        font-size: 28px;
+        font-size: 24px;
         font-weight: 700;
-        margin: 20px 0 15px 0;
+        margin: 15px 0 12px 0;
         text-shadow: 
             0 2px 4px rgba(0,0,0,0.9),
-            0 0 10px rgba(0, 150, 255, 0.5);
-        padding: 8px 20px;
-        background: rgba(0, 0, 0, 0.4);
-        border-radius: 12px;
-        border: 1px solid rgba(255,255,255,0.1);
-        min-width: 100px;
+            0 0 8px rgba(255,100,100,0.5); /* Красное свечение */
+        padding: 6px 15px;
+        background: rgba(40,10,10,0.5); /* Темно-красный фон */
+        border-radius: 8px;
+        border: 1px solid rgba(255,100,100,0.2);
+        min-width: 80px;
         text-align: center;
-        letter-spacing: 1px;
+        letter-spacing: 0.5px;
     }
     
-    /* Кнопки точной регулировки */
+    /* Кнопки точной регулировки - красноватые */
     .fine-controls {
-        margin-top: 10px;
+        margin-top: 8px;
         display: flex;
         justify-content: center;
-        gap: 12px;
+        gap: 8px;
         width: 100%;
     }
     
     .servo-fine-btn {
-        padding: 10px 16px;
-        font-size: 15px;
+        padding: 8px 12px;
+        font-size: 14px;
         font-weight: 600;
         border: none;
-        border-radius: 10px;
-        background: linear-gradient(to bottom, #4a4a4a, #2a2a2a);
-        color: white;
+        border-radius: 6px;
+        background: linear-gradient(to bottom, #5a2a2a, #3a1a1a); /* Темно-красный градиент */
+        color: #ffcccc;
         cursor: pointer;
         transition: all 0.2s ease;
         box-shadow: 
-            0 4px 8px rgba(0,0,0,0.3),
-            inset 0 1px 0 rgba(255,255,255,0.1);
-        min-width: 60px;
+            0 3px 6px rgba(0,0,0,0.3),
+            inset 0 1px 0 rgba(255,150,150,0.1); /* Красный инсет */
+        min-width: 50px;
         letter-spacing: 0.5px;
     }
     
     .servo-fine-btn:hover {
-        background: linear-gradient(to bottom, #5a5a5a, #3a3a3a);
-        transform: translateY(-2px);
+        background: linear-gradient(to bottom, #6a3a3a, #4a2a2a);
+        transform: translateY(-1px);
         box-shadow: 
-            0 6px 12px rgba(0,0,0,0.4),
-            inset 0 1px 0 rgba(255,255,255,0.15);
+            0 4px 8px rgba(0,0,0,0.4),
+            inset 0 1px 0 rgba(255,150,150,0.15);
     }
     
     .servo-fine-btn:active {
         transform: translateY(1px);
         box-shadow: 
-            0 2px 4px rgba(0,0,0,0.3),
-            inset 0 1px 0 rgba(255,255,255,0.05);
+            0 1px 3px rgba(0,0,0,0.3),
+            inset 0 1px 0 rgba(255,150,150,0.05);
     }
     
     /* Индикатор текущего положения на треке */
@@ -245,59 +243,61 @@
         position: absolute;
         left: 0;
         right: 0;
-        height: 3px;
-        background: rgba(255,255,255,0.8);
+        height: 2px;
+        background: rgba(255,200,200,0.8); /* Светло-красный */
         pointer-events: none;
         z-index: 1;
-        box-shadow: 0 0 10px rgba(255,255,255,0.5);
+        box-shadow: 0 0 8px rgba(255,100,100,0.5);
     }
     
     /* Адаптивность */
     @media (max-width: 768px) {
         #servoContainer {
-            width: max(18vw, 18vh);
-            padding: 15px 10px;
+            width: max(14vw, 14vh);
+            padding: 12px 8px;
         }
         
         #servoTrack {
-            height: 220px;
+            height: 200px;
         }
         
         #servoHandle {
-            width: 48px;
-            height: 48px;
+            width: 44px;
+            height: 44px;
+            border-radius: 6px;
         }
         
         .servo-fine-btn {
-            padding: 8px 12px;
-            font-size: 14px;
-            min-width: 50px;
+            padding: 6px 10px;
+            font-size: 13px;
+            min-width: 45px;
         }
         
         #servoValue {
-            font-size: 24px;
-            padding: 6px 15px;
+            font-size: 22px;
+            padding: 5px 12px;
         }
     }
     
     @media (max-width: 480px) {
         #servoContainer {
-            width: 100px;
+            width: 90px;
             margin: 10px;
         }
         
         #servoTrack {
-            height: 180px;
+            height: 160px;
         }
         
         #servoHandle {
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
+            border-radius: 5px;
         }
         
         #servoHandle::after {
-            width: 8px;
-            height: 8px;
+            width: 7px;
+            height: 7px;
         }
     }
     </style>
@@ -424,21 +424,21 @@
             updatePositionIndicator(angle);
         }
         
-        // Преобразование угла в позицию на треке
+        // Преобразование угла в позицию на треке (ИНВЕРТИРОВАНО - теперь вверх = 180°, низ = 0°)
         function angleToPosition(angle) {
-            // 0° = верх трека, 180° = низ трека
-            var percentage = 1 - (angle / 180);
+            // ИНВЕРСИЯ: 0° = НИЗ трека, 180° = ВЕРХ трека
+            var percentage = angle / 180; // Прямая зависимость
             var trackHeight = track.offsetHeight;
             var handleHeight = handle.offsetHeight;
             return percentage * (trackHeight - handleHeight);
         }
         
-        // Преобразование позиции на треке в угол
+        // Преобразование позиции на треке в угол (ИНВЕРТИРОВАНО)
         function positionToAngle(position) {
             var trackHeight = track.offsetHeight;
             var handleHeight = handle.offsetHeight;
             var percentage = position / (trackHeight - handleHeight);
-            var angle = (1 - percentage) * 180;
+            var angle = percentage * 180; // Прямая зависимость
             return Math.max(0, Math.min(180, angle));
         }
         
@@ -469,8 +469,8 @@
                 var rect = track.getBoundingClientRect();
                 var mouseY = e.clientY;
                 
-                // Ограничиваем позицию в пределах трека
-                var position = rect.bottom - mouseY;
+                // Ограничиваем позицию в пределах трека (ИНВЕРТИРОВАНО)
+                var position = mouseY - rect.top - handle.offsetHeight/2;
                 position = Math.max(0, Math.min(track.offsetHeight - handle.offsetHeight, position));
                 
                 // Обновляем позицию ползунка
@@ -503,7 +503,8 @@
             var rect = this.getBoundingClientRect();
             var mouseY = e.clientY;
             
-            var position = rect.bottom - mouseY;
+            // ИНВЕРТИРОВАННАЯ логика
+            var position = mouseY - rect.top - handle.offsetHeight/2;
             position = Math.max(0, Math.min(track.offsetHeight - handle.offsetHeight, position));
             
             handle.style.bottom = position + 'px';
@@ -512,7 +513,7 @@
             controlServoSmooth(angle, true);
         });
         
-        // События для тач-устройств
+        // События для тач-устройств (ИНВЕРТИРОВАНО)
         handle.addEventListener('touchstart', function(e) {
             isDragging = true;
             angleBuffer = [];
@@ -526,7 +527,8 @@
                 var rect = track.getBoundingClientRect();
                 var touchY = e.touches[0].clientY;
                 
-                var position = rect.bottom - touchY;
+                // ИНВЕРТИРОВАННАЯ логика
+                var position = touchY - rect.top - handle.offsetHeight/2;
                 position = Math.max(0, Math.min(track.offsetHeight - handle.offsetHeight, position));
                 
                 handle.style.bottom = position + 'px';
