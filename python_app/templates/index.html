@@ -4,399 +4,578 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>CVbot</title>
-	<script src="/static/joy.js"></script>
-	<style>
-	html{
-		width: 100%;
-		height: 100%;
-	}
+    <script src="/static/joy.js"></script>
+    <style>
+    html{
+        width: 100%;
+        height: 100%;
+    }
 
-	body {
-		position:absolute; top:0; bottom:0; right:0; left:0;
-		margin: 0;
-		background-color: #000000;
-	}
-	
-	#videoContainer {
-		background-color: #00000000;
-	}
-	
-	#video {
-		width: 100vw;
-		height: 100vh;
-		display: block;
-		margin: auto;
-	}
-	
-	#logo {
-		width: 7%;
-		height: auto;
-		position: absolute;
-		padding: 0px;
-		top: 3%;
-		left: 1%;
-	}
-	
-	#joyDiv {
-		width: max(33vw, 33vh);
-		height: max(33vw, 33vh);
-		max-width: 400px;
-		max-height: 400px;
-		position: absolute;
-		bottom: 0%;
-		right: 0%;
-	}
-	
-	/* НОВЫЕ СТИЛИ ДЛЯ ПОЛЗУНКА */
-	 #servoContainer {
+    body {
+        position:absolute; top:0; bottom:0; right:0; left:0;
+        margin: 0;
+        background-color: #000000;
+        overflow: hidden;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    #videoContainer {
+        background-color: #00000000;
+    }
+    
+    #video {
+        width: 100vw;
+        height: 100vh;
+        display: block;
+        margin: auto;
+        object-fit: cover;
+    }
+    
+    #logo {
+        width: 7%;
+        height: auto;
+        position: absolute;
+        padding: 0px;
+        top: 3%;
+        left: 1%;
+        filter: drop-shadow(0 0 5px rgba(255,255,255,0.5));
+        transition: transform 0.3s;
+        z-index: 100;
+    }
+    
+    #logo:hover {
+        transform: scale(1.05);
+    }
+    
+    #joyDiv {
+        width: max(33vw, 33vh);
+        height: max(33vw, 33vh);
+        max-width: 400px;
+        max-height: 400px;
+        position: absolute;
+        bottom: 0%;
+        right: 0%;
+        z-index: 10;
+    }
+    
+    /* Контейнер для сервопривода */
+    #servoContainer {
         position: absolute;
         bottom: 0%;
         left: 0%;
-        width: max(15vw, 15vh);  /* Увеличили с 10vw до 15vw */
-        height: max(40vw, 40vh);  /* Увеличили с 33vw до 40vw */
-        max-width: 150px;         /* Увеличили с 120px */
-        max-height: 500px;        /* Увеличили с 400px */
+        width: max(15vw, 15vh);
+        height: max(40vw, 40vh);
+        max-width: 160px;
+        max-height: 500px;
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
-        padding: 25px;           /* Увеличили padding */
-        background-color: rgba(0, 0, 0, 0.6);
-        border-radius: 20px;     /* Увеличили радиус */
+        justify-content: flex-start;
+        padding: 20px 15px;
+        background: linear-gradient(145deg, rgba(30,30,30,0.9), rgba(10,10,10,0.9));
+        border-radius: 20px;
         margin: 20px;
-        box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+        box-shadow: 
+            0 10px 30px rgba(0,0,0,0.8),
+            inset 0 1px 0 rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.1);
+        backdrop-filter: blur(5px);
+        z-index: 10;
     }
     
-    #servoSlider {
+    /* Заголовок сервы */
+    #servoLabel {
+        color: #fff;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 20px;
+        font-weight: 600;
+        margin-bottom: 25px;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        letter-spacing: 0.5px;
+        text-align: center;
         width: 100%;
-        height: 85%;            /* Увеличили высоту */
-        -webkit-appearance: slider-vertical;
-        appearance: slider-vertical;
-        writing-mode: bt-lr;
-        direction: rtl;
-        background: linear-gradient(to top, #ff0000, #ffff00, #00ff00);
+        padding-bottom: 10px;
+        border-bottom: 2px solid rgba(255,255,255,0.2);
+    }
+    
+    /* Кастомный слайдер - трек */
+    #servoTrack {
+        width: 100%;
+        height: 280px;
+        background: linear-gradient(to top, 
+            #ff0000 0%, 
+            #ff3300 20%, 
+            #ff6600 40%, 
+            #ffcc00 60%, 
+            #ffff00 70%, 
+            #ccff00 80%, 
+            #00ff00 100%);
         border-radius: 15px;
-        outline: none;
+        position: relative;
+        box-shadow: 
+            inset 0 0 20px rgba(0,0,0,0.5),
+            0 5px 15px rgba(0,0,0,0.3);
+        overflow: hidden;
         cursor: pointer;
+        border: 2px solid rgba(255,255,255,0.1);
     }
     
-    #servoSlider::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 50px;            /* Увеличили с 40px */
-        height: 50px;           /* Увеличили с 40px */
+    /* Индикаторы на треке */
+    #servoTrack::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: rgba(255,255,255,0.3);
+        box-shadow: 0 50px 0 rgba(255,255,255,0.3),
+                    0 100px 0 rgba(255,255,255,0.3),
+                    0 150px 0 rgba(255,255,255,0.3),
+                    0 200px 0 rgba(255,255,255,0.3),
+                    0 250px 0 rgba(255,255,255,0.3);
+    }
+    
+    /* Ползунок кастомного слайдера */
+    #servoHandle {
+        width: 56px;
+        height: 56px;
+        background: radial-gradient(circle at 30% 30%, #ffffff, #e0e0e0);
         border-radius: 50%;
-        background: radial-gradient(circle, #ffffff, #cccccc);
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
         cursor: grab;
-        border: 4px solid #333333;
-        box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
-        transition: transform 0.1s;
+        border: 3px solid #333;
+        box-shadow: 
+            0 0 20px rgba(0,0,0,0.8),
+            0 5px 15px rgba(0,0,0,0.5),
+            inset 0 2px 5px rgba(255,255,255,0.8);
+        transition: all 0.15s ease;
+        z-index: 2;
+        bottom: 50%; /* Начальная позиция - 90° */
     }
     
-    #servoSlider::-webkit-slider-thumb:active {
+    #servoHandle:active {
         cursor: grabbing;
-        transform: scale(1.1);
-        background: radial-gradient(circle, #ffffff, #aaaaaa);
+        transform: translateX(-50%) scale(1.1);
+        box-shadow: 
+            0 0 25px rgba(0,0,0,0.9),
+            0 8px 20px rgba(0,0,0,0.6),
+            inset 0 1px 3px rgba(255,255,255,0.9);
+        border-color: #555;
     }
     
-    #servoSlider::-moz-range-thumb {
-        width: 50px;
-        height: 50px;
+    /* Центральная точка на ползунке */
+    #servoHandle::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 12px;
+        height: 12px;
+        background: #333;
         border-radius: 50%;
-        background: radial-gradient(circle, #ffffff, #cccccc);
-        cursor: pointer;
-        border: 4px solid #333333;
-        box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
     }
     
+    /* Отображение значения угла */
     #servoValue {
         color: white;
-        font-family: Arial, sans-serif;
-        font-size: 28px;        /* Увеличили шрифт */
-        font-weight: bold;
-        margin-top: 20px;
-        text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.9);
-        padding: 5px 15px;
-        background-color: rgba(0, 0, 0, 0.5);
-        border-radius: 10px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 28px;
+        font-weight: 700;
+        margin: 20px 0 15px 0;
+        text-shadow: 
+            0 2px 4px rgba(0,0,0,0.9),
+            0 0 10px rgba(0, 150, 255, 0.5);
+        padding: 8px 20px;
+        background: rgba(0, 0, 0, 0.4);
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.1);
+        min-width: 100px;
+        text-align: center;
+        letter-spacing: 1px;
     }
     
-    #servoLabel {
-        color: white;
-        font-family: Arial, sans-serif;
-        font-size: 20px;        /* Увеличили шрифт */
-        margin-bottom: 20px;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-        font-weight: bold;
-    }
-    
-    /* Стили для кнопок точной регулировки */
-    .servo-fine-btn {
-        padding: 8px 15px;
-        font-size: 14px;
-        border: none;
-        border-radius: 8px;
-        background: linear-gradient(to bottom, #444, #222);
-        color: white;
-        cursor: pointer;
-        transition: all 0.2s;
-        box-shadow: 0 3px 5px rgba(0,0,0,0.3);
-    }
-    
-    .servo-fine-btn:hover {
-        background: linear-gradient(to bottom, #555, #333);
-        transform: translateY(-2px);
-    }
-    
-    .servo-fine-btn:active {
-        transform: translateY(1px);
-        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-    }
-    
-    /* Контейнер для кнопок */
+    /* Кнопки точной регулировки */
     .fine-controls {
-        margin-top: 15px;
+        margin-top: 10px;
         display: flex;
         justify-content: center;
         gap: 12px;
         width: 100%;
     }
-	
-	</style>
+    
+    .servo-fine-btn {
+        padding: 10px 16px;
+        font-size: 15px;
+        font-weight: 600;
+        border: none;
+        border-radius: 10px;
+        background: linear-gradient(to bottom, #4a4a4a, #2a2a2a);
+        color: white;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 
+            0 4px 8px rgba(0,0,0,0.3),
+            inset 0 1px 0 rgba(255,255,255,0.1);
+        min-width: 60px;
+        letter-spacing: 0.5px;
+    }
+    
+    .servo-fine-btn:hover {
+        background: linear-gradient(to bottom, #5a5a5a, #3a3a3a);
+        transform: translateY(-2px);
+        box-shadow: 
+            0 6px 12px rgba(0,0,0,0.4),
+            inset 0 1px 0 rgba(255,255,255,0.15);
+    }
+    
+    .servo-fine-btn:active {
+        transform: translateY(1px);
+        box-shadow: 
+            0 2px 4px rgba(0,0,0,0.3),
+            inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+    
+    /* Индикатор текущего положения на треке */
+    #positionIndicator {
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: rgba(255,255,255,0.8);
+        pointer-events: none;
+        z-index: 1;
+        box-shadow: 0 0 10px rgba(255,255,255,0.5);
+    }
+    
+    /* Адаптивность */
+    @media (max-width: 768px) {
+        #servoContainer {
+            width: max(18vw, 18vh);
+            padding: 15px 10px;
+        }
+        
+        #servoTrack {
+            height: 220px;
+        }
+        
+        #servoHandle {
+            width: 48px;
+            height: 48px;
+        }
+        
+        .servo-fine-btn {
+            padding: 8px 12px;
+            font-size: 14px;
+            min-width: 50px;
+        }
+        
+        #servoValue {
+            font-size: 24px;
+            padding: 6px 15px;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        #servoContainer {
+            width: 100px;
+            margin: 10px;
+        }
+        
+        #servoTrack {
+            height: 180px;
+        }
+        
+        #servoHandle {
+            width: 40px;
+            height: 40px;
+        }
+        
+        #servoHandle::after {
+            width: 8px;
+            height: 8px;
+        }
+    }
+    </style>
 </head>
 <body>
-	<div id="videoContainer"><img id="video" src="{{ url_for('video_feed') }}"></div>
-	<a href="https://www.youtube.com/channel/UCHRTaqr8KSCfyo2_CLH-yfg"><img id="logo" src="/static/logo.png"></a>
-	
-	<!-- НОВЫЙ КОНТЕЙНЕР ДЛЯ ПОЛЗУНКА -->
-	<!-- <div id="servoContainer">
-		<div id="servoLabel">Камера</div>
-		<input type="range" id="servoSlider" min="0" max="180" value="90" orient="vertical">
-		<div id="servoValue">90°</div>
-	</div> -->
-	<div id="servoContainer">
-    <div id="servoLabel">Камера</div>
+    <div id="videoContainer"><img id="video" src="{{ url_for('video_feed') }}"></div>
+    <a href="https://www.youtube.com/channel/UCHRTaqr8KSCfyo2_CLH-yfg" target="_blank">
+        <img id="logo" src="/static/logo.png" alt="CVbot Logo">
+    </a>
     
-    <!-- Кастомный слайдер -->
-    <div id="customSliderWrapper" style="width: 100%; height: 85%; position: relative;">
-        <div id="servoTrack" style="width: 100%; height: 100%; background: linear-gradient(to top, #ff0000, #ffff00, #00ff00); border-radius: 15px; position: relative;">
-            <div id="servoHandle" style="width: 50px; height: 50px; background: radial-gradient(circle, #ffffff, #cccccc); border-radius: 50%; position: absolute; left: 50%; transform: translateX(-50%); cursor: grab; border: 4px solid #333333; box-shadow: 0 0 15px rgba(0, 0, 0, 0.7); transition: transform 0.1s; bottom: 50%;"></div>
+    <!-- Контейнер для сервопривода с кастомным слайдером -->
+    <div id="servoContainer">
+        <div id="servoLabel">Камера</div>
+        
+        <!-- Кастомный слайдер -->
+        <div id="servoTrack">
+            <div id="positionIndicator"></div>
+            <div id="servoHandle"></div>
+        </div>
+        
+        <div id="servoValue">90°</div>
+        
+        <!-- Кнопки точной регулировки -->
+        <div class="fine-controls">
+            <button id="servoMinus5" class="servo-fine-btn" title="Уменьшить на 5°">-5°</button>
+            <button id="servoCenter" class="servo-fine-btn" title="Центр (90°)">90°</button>
+            <button id="servoPlus5" class="servo-fine-btn" title="Увеличить на 5°">+5°</button>
         </div>
     </div>
     
-    <div id="servoValue">90°</div>
-</div>
-
-
-	<div id="joyDiv"></div>
-	
-	<script type="text/javascript">
-		// Джойстик
-		var joyParam = {
-			"title": "joystick", 
-			"autoReturnToCenter": true, 
-			"internalFillColor": "#FF0000", 
-			"externalStrokeColor": "#800000", 
-			"externalLineWidth": "5"
-		};
-		var joy = new JoyStick('joyDiv', joyParam);
-		
-		// Функция для управления роботом
-		function control(x, y){
-			var xhttp = new XMLHttpRequest();
-			xhttp.open("GET", "control?x=" + x +"&y="+y, true); 
-			xhttp.send();
-		}
-		
-		// Функция для управления сервоприводом
-		function controlServo(angle){
-			var xhttp = new XMLHttpRequest();
-			xhttp.open("GET", "servo_control?angle=" + angle, true); 
-			xhttp.send();
-		}
-		
-		// Ползунок сервопривода
-    var servoSlider = document.getElementById('servoSlider');
-    var servoValue = document.getElementById('servoValue');
+    <div id="joyDiv"></div>
     
-    // Переменные для плавного управления
-    var isDragging = false;
-    var lastSendTime = 0;
-    var sendInterval = 30; // Уменьшили интервал отправки
-    var lastSentAngle = null;
-    var angleBuffer = [];
-    var bufferSize = 3;
-    
-    // Функция для плавной фильтрации значений
-    function smoothValue(newValue, buffer) {
-        buffer.push(newValue);
-        if (buffer.length > bufferSize) {
-            buffer.shift();
+    <script type="text/javascript">
+        // Джойстик
+        var joyParam = {
+            "title": "joystick", 
+            "autoReturnToCenter": true, 
+            "internalFillColor": "#FF0000", 
+            "externalStrokeColor": "#800000", 
+            "externalLineWidth": "5"
+        };
+        var joy = new JoyStick('joyDiv', joyParam);
+        
+        // Функция для управления роботом
+        function control(x, y){
+            var xhttp = new XMLHttpRequest();
+            xhttp.open("GET", "control?x=" + x +"&y="+y, true); 
+            xhttp.send();
         }
         
-        // Среднее значение из буфера
-        var sum = buffer.reduce((a, b) => a + b, 0);
-        return sum / buffer.length;
-    }
-    
-    // Функция для плавного управления сервой
-    function controlServoSmooth(angle, immediate = false) {
-        var currentTime = Date.now();
+        // Переменные для плавного управления сервой
+        var isDragging = false;
+        var lastSendTime = 0;
+        var sendInterval = 30; // ms между отправками
+        var lastSentAngle = 90;
+        var angleBuffer = [];
+        var bufferSize = 3;
+        var handle = document.getElementById('servoHandle');
+        var track = document.getElementById('servoTrack');
+        var servoValue = document.getElementById('servoValue');
+        var positionIndicator = document.getElementById('positionIndicator');
         
-        // Пропускаем слишком частые отправки
-        if (!immediate && (currentTime - lastSendTime < sendInterval)) {
-            return;
+        // Инициализация - устанавливаем начальную позицию (90°)
+        updateHandlePositionFromAngle(90);
+        updatePositionIndicator(90);
+        
+        // Функция для плавной фильтрации значений
+        function smoothValue(newValue, buffer) {
+            buffer.push(newValue);
+            if (buffer.length > bufferSize) {
+                buffer.shift();
+            }
+            
+            // Взвешенное среднее (последние значения важнее)
+            var sum = 0;
+            var weight = 1;
+            for (var i = buffer.length - 1; i >= 0; i--) {
+                sum += buffer[i] * weight;
+                weight *= 0.8; // Коэффициент затухания
+            }
+            
+            var totalWeight = (1 - Math.pow(0.8, buffer.length)) / 0.2;
+            return sum / totalWeight;
         }
         
-        // Применяем сглаживание при перетаскивании
-        if (isDragging) {
-            angle = smoothValue(angle, angleBuffer);
+        // Функция для плавного управления сервой
+        function controlServoSmooth(angle, immediate = false) {
+            var currentTime = Date.now();
+            
+            // Пропускаем слишком частые отправки
+            if (!immediate && (currentTime - lastSendTime < sendInterval)) {
+                return;
+            }
+            
+            // Применяем сглаживание при перетаскивании
+            if (isDragging) {
+                angle = smoothValue(angle, angleBuffer);
+            }
+            
+            // Отправляем только если угол изменился достаточно
+            if (!immediate && lastSentAngle !== null && Math.abs(angle - lastSentAngle) < 0.2) {
+                return;
+            }
+            
+            var xhttp = new XMLHttpRequest();
+            var url = "servo_control?angle=" + angle.toFixed(2); // 2 знака после запятой
+            
+            // При перетаскивании используем плавное движение
+            // при отпускании - быстрое финальное позиционирование
+            if (isDragging && !immediate) {
+                url += "&smooth=true";
+            } else {
+                url += "&smooth=false";
+            }
+            
+            xhttp.open("GET", url, true);
+            xhttp.send();
+            
+            lastSendTime = currentTime;
+            lastSentAngle = angle;
+            
+            // Обновляем отображение
+            servoValue.textContent = angle.toFixed(1) + '°';
+            updatePositionIndicator(angle);
         }
         
-        // Отправляем только если угол изменился достаточно
-        if (lastSentAngle !== null && Math.abs(angle - lastSentAngle) < 0.3 && !immediate) {
-            return;
+        // Преобразование угла в позицию на треке
+        function angleToPosition(angle) {
+            // 0° = верх трека, 180° = низ трека
+            var percentage = 1 - (angle / 180);
+            var trackHeight = track.offsetHeight;
+            var handleHeight = handle.offsetHeight;
+            return percentage * (trackHeight - handleHeight);
         }
         
-        var xhttp = new XMLHttpRequest();
-        var url = "servo_control?angle=" + angle.toFixed(2); // 2 знака после запятой!
-        
-        // При перетаскивании используем плавное движение
-        // при отпускании - быстрое финальное позиционирование
-        if (isDragging) {
-            url += "&smooth=true";
-        } else {
-            url += "&smooth=false";
+        // Преобразование позиции на треке в угол
+        function positionToAngle(position) {
+            var trackHeight = track.offsetHeight;
+            var handleHeight = handle.offsetHeight;
+            var percentage = position / (trackHeight - handleHeight);
+            var angle = (1 - percentage) * 180;
+            return Math.max(0, Math.min(180, angle));
         }
         
-        xhttp.open("GET", url, true);
-        xhttp.send();
+        // Обновление позиции ползунка по углу
+        function updateHandlePositionFromAngle(angle) {
+            var position = angleToPosition(angle);
+            handle.style.bottom = position + 'px';
+        }
         
-        lastSendTime = currentTime;
-        lastSentAngle = angle;
+        // Обновление индикатора позиции
+        function updatePositionIndicator(angle) {
+            var position = angleToPosition(angle);
+            positionIndicator.style.bottom = (position + handle.offsetHeight / 2) + 'px';
+        }
         
-        // Обновляем отображение с большей точностью
-        servoValue.textContent = angle.toFixed(1) + '°';
-    }
-    
-    // События ползунка для мыши
-    servoSlider.addEventListener('mousedown', function() {
-        isDragging = true;
-        angleBuffer = []; // Очищаем буфер при начале перетаскивания
-    });
-    
-    servoSlider.addEventListener('mousemove', function(e) {
-        if (isDragging) {
-            // Получаем более точное значение на основе позиции мыши
+        // События мыши для кастомного слайдера
+        handle.addEventListener('mousedown', function(e) {
+            isDragging = true;
+            angleBuffer = [];
+            handle.style.cursor = 'grabbing';
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+            e.preventDefault();
+        });
+        
+        function onMouseMove(e) {
+            if (isDragging) {
+                var rect = track.getBoundingClientRect();
+                var mouseY = e.clientY;
+                
+                // Ограничиваем позицию в пределах трека
+                var position = rect.bottom - mouseY;
+                position = Math.max(0, Math.min(track.offsetHeight - handle.offsetHeight, position));
+                
+                // Обновляем позицию ползунка
+                handle.style.bottom = position + 'px';
+                
+                // Вычисляем угол и отправляем
+                var angle = positionToAngle(position);
+                controlServoSmooth(angle, false);
+            }
+        }
+        
+        function onMouseUp() {
+            if (isDragging) {
+                isDragging = false;
+                handle.style.cursor = 'grab';
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                
+                // Финальная точная установка
+                var position = parseFloat(handle.style.bottom);
+                var angle = positionToAngle(position);
+                controlServoSmooth(angle, true);
+            }
+        }
+        
+        // Клик по треку для быстрой установки
+        track.addEventListener('click', function(e) {
+            if (e.target === handle) return; // Не обрабатываем клик по самому ползунку
+            
             var rect = this.getBoundingClientRect();
-            var percentage = 1 - ((e.clientY - rect.top) / rect.height);
-            percentage = Math.max(0, Math.min(1, percentage));
-            var preciseAngle = percentage * 180;
+            var mouseY = e.clientY;
             
-            // Устанавливаем значение слайдера
-            this.value = preciseAngle;
+            var position = rect.bottom - mouseY;
+            position = Math.max(0, Math.min(track.offsetHeight - handle.offsetHeight, position));
             
-            // Отправляем плавно
-            controlServoSmooth(preciseAngle, false);
-        }
-    });
-    
-    servoSlider.addEventListener('mouseup', function() {
-        if (isDragging) {
-            isDragging = false;
-            // Финальная точная установка
-            controlServoSmooth(parseFloat(this.value), true);
-        }
-    });
-    
-    // События для тач-устройств
-    servoSlider.addEventListener('touchstart', function(e) {
-        isDragging = true;
-        angleBuffer = [];
-        e.preventDefault(); // Предотвращаем прокрутку страницы
-    }, { passive: false });
-    
-    servoSlider.addEventListener('touchmove', function(e) {
-        if (isDragging) {
-            var rect = this.getBoundingClientRect();
-            var touch = e.touches[0];
-            var percentage = 1 - ((touch.clientY - rect.top) / rect.height);
-            percentage = Math.max(0, Math.min(1, percentage));
-            var preciseAngle = percentage * 180;
+            handle.style.bottom = position + 'px';
             
-            this.value = preciseAngle;
-            controlServoSmooth(preciseAngle, false);
-            
-            e.preventDefault(); // Предотвращаем прокрутку страницы
-        }
-    }, { passive: false });
-    
-    servoSlider.addEventListener('touchend', function() {
-        if (isDragging) {
-            isDragging = false;
-            controlServoSmooth(parseFloat(this.value), true);
-        }
-    });
-    
-    // Обычный input (для клавиатуры и колесика мыши)
-    servoSlider.addEventListener('input', function() {
-        if (!isDragging) { // Если не перетаскиваем мышью/тачем
-            controlServoSmooth(parseFloat(this.value), false);
-        }
-    });
-    
-    servoSlider.addEventListener('change', function() {
-        if (!isDragging) {
-            controlServoSmooth(parseFloat(this.value), true);
-        }
-    });
-    
-    // Дополнительно: улучшаем кнопки точной регулировки
-    document.addEventListener('DOMContentLoaded', function() {
-        var servoContainer = document.getElementById('servoContainer');
+            var angle = positionToAngle(position);
+            controlServoSmooth(angle, true);
+        });
         
-        // Улучшенные кнопки
-        var fineControls = document.createElement('div');
-        fineControls.className = 'fine-controls';
-        fineControls.innerHTML = `
-            <button id="servoMinus1" class="servo-fine-btn" title="Точное уменьшение">
-                <span style="font-size: 18px;">-1°</span>
-            </button>
-            <button id="servoCenter" class="servo-fine-btn" title="Центр">
-                <span style="font-size: 18px;">90°</span>
-            </button>
-            <button id="servoPlus1" class="servo-fine-btn" title="Точное увеличение">
-                <span style="font-size: 18px;">+1°</span>
-            </button>
-        `;
-        servoContainer.appendChild(fineControls);
+        // События для тач-устройств
+        handle.addEventListener('touchstart', function(e) {
+            isDragging = true;
+            angleBuffer = [];
+            document.addEventListener('touchmove', onTouchMove, { passive: false });
+            document.addEventListener('touchend', onTouchEnd);
+            e.preventDefault();
+        }, { passive: false });
         
-        // Обработчики для более точных кнопок
+        function onTouchMove(e) {
+            if (isDragging && e.touches.length > 0) {
+                var rect = track.getBoundingClientRect();
+                var touchY = e.touches[0].clientY;
+                
+                var position = rect.bottom - touchY;
+                position = Math.max(0, Math.min(track.offsetHeight - handle.offsetHeight, position));
+                
+                handle.style.bottom = position + 'px';
+                
+                var angle = positionToAngle(position);
+                controlServoSmooth(angle, false);
+                
+                e.preventDefault();
+            }
+        }
+        
+        function onTouchEnd() {
+            if (isDragging) {
+                isDragging = false;
+                document.removeEventListener('touchmove', onTouchMove);
+                document.removeEventListener('touchend', onTouchEnd);
+                
+                // Финальная установка
+                var position = parseFloat(handle.style.bottom);
+                var angle = positionToAngle(position);
+                controlServoSmooth(angle, true);
+            }
+        }
+        
+        // Обработчики кнопок точной регулировки
         function makeFineAdjustment(delta) {
-            var current = parseFloat(servoSlider.value);
-            var newAngle = Math.max(0, Math.min(180, current + delta));
-            servoSlider.value = newAngle;
-            controlServoSmooth(newAngle, true);
+            var currentAngle = lastSentAngle + delta;
+            currentAngle = Math.max(0, Math.min(180, currentAngle));
+            
+            updateHandlePositionFromAngle(currentAngle);
+            controlServoSmooth(currentAngle, true);
         }
         
-        document.getElementById('servoMinus1').addEventListener('click', function() {
-            makeFineAdjustment(-1);
+        document.getElementById('servoMinus5').addEventListener('click', function() {
+            makeFineAdjustment(-5);
         });
         
         document.getElementById('servoCenter').addEventListener('click', function() {
-            servoSlider.value = 90;
+            updateHandlePositionFromAngle(90);
             controlServoSmooth(90, true);
         });
         
-        document.getElementById('servoPlus1').addEventListener('click', function() {
-            makeFineAdjustment(1);
+        document.getElementById('servoPlus5').addEventListener('click', function() {
+            makeFineAdjustment(5);
         });
         
-        // Добавляем обработку клавиш клавиатуры
+        // Управление с клавиатуры
         document.addEventListener('keydown', function(e) {
             if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
-                var current = parseFloat(servoSlider.value);
-                
                 switch(e.key) {
                     case 'ArrowUp':
                     case 'w':
@@ -411,42 +590,67 @@
                         e.preventDefault();
                         break;
                     case 'Home':
-                        makeFineAdjustment(-current); // На минимум
+                        updateHandlePositionFromAngle(0);
+                        controlServoSmooth(0, true);
                         e.preventDefault();
                         break;
                     case 'End':
-                        makeFineAdjustment(180 - current); // На максимум
+                        updateHandlePositionFromAngle(180);
+                        controlServoSmooth(180, true);
                         e.preventDefault();
                         break;
                     case ' ':
                     case 'Enter':
-                        servoSlider.value = 90;
+                        updateHandlePositionFromAngle(90);
                         controlServoSmooth(90, true);
+                        e.preventDefault();
+                        break;
+                    case 'PageUp':
+                        makeFineAdjustment(5);
+                        e.preventDefault();
+                        break;
+                    case 'PageDown':
+                        makeFineAdjustment(-5);
                         e.preventDefault();
                         break;
                 }
             }
         });
-    });
-	// Улучшенная отправка джойстика - только при изменении
-    var lastJoyX = null;
-    var lastJoyY = null;
-    var joySendInterval = 50; // ms
-    
-    function sendJoyDataIfChanged() {
-        var currentX = joy.GetX();
-        var currentY = joy.GetY();
         
-        // Если значения изменились или это первая отправка
-        if (lastJoyX !== currentX || lastJoyY !== currentY || lastJoyX === null) {
-            control(currentX, currentY);
-            lastJoyX = currentX;
-            lastJoyY = currentY;
+        // Улучшенная отправка джойстика - только при изменении
+        var lastJoyX = null;
+        var lastJoyY = null;
+        var joySendInterval = 50; // ms
+        
+        function sendJoyDataIfChanged() {
+            var currentX = joy.GetX();
+            var currentY = joy.GetY();
+            
+            // Если значения изменились или это первая отправка
+            if (lastJoyX !== currentX || lastJoyY !== currentY || lastJoyX === null) {
+                control(currentX, currentY);
+                lastJoyX = currentX;
+                lastJoyY = currentY;
+            }
         }
-    }
-    
-    // Запускаем проверку изменений джойстика
-    setInterval(sendJoyDataIfChanged, joySendInterval);
-</script>
+        
+        // Запускаем проверку изменений джойстика
+        setInterval(sendJoyDataIfChanged, joySendInterval);
+        
+        // Анимация при загрузке
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                track.style.opacity = '1';
+                handle.style.opacity = '1';
+            }, 100);
+        });
+        
+        // Инициализация стилей
+        track.style.opacity = '0.8';
+        handle.style.opacity = '0.8';
+        track.style.transition = 'opacity 0.3s ease';
+        handle.style.transition = 'opacity 0.3s ease, transform 0.15s ease';
+        
+    </script>
 </body>
 </html>
