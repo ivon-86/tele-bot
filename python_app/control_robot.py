@@ -91,9 +91,13 @@ class ControlServoCam:
             
             # Сохраняем текущий угол
             self.current_angle = angle
-            
+
             # Даем серве время на перемещение (50ms достаточно для большинства сервоприводов)
             time.sleep(0.05)
+            
+            # ОТКЛЮЧАЕМ PWM для фиксации!
+            self.pwm.ChangeDutyCycle(0)
+            
             
             print(f"Servo camera angle set to: {angle}° (duty cycle: {duty_cycle:.1f}%)")
             return True
@@ -131,12 +135,12 @@ class ControlServoCam:
         print("Starting servo sweep test...")
         
         # От минимума до максимума
-        for angle in range(self.min_angle, self.max_angle + 1, 1):
+        for angle in range(self.min_angle, self.max_angle + 1, 5):
             self.set_angle(angle)
             time.sleep(delay)
         
         # От максимума до минимума
-        for angle in range(self.max_angle, self.min_angle - 1, -1):
+        for angle in range(self.max_angle, self.min_angle - 1, -5):
             self.set_angle(angle)
             time.sleep(delay)
         
@@ -200,7 +204,7 @@ if __name__ == "__main__":
         time.sleep(4)
         
         # Можно протестировать прогон по диапазону (раскомментировать при необходимости)
-        servo_cam.sweep_test(delay=0.1)
+        servo_cam.sweep_test(delay=0.5)
         
     except KeyboardInterrupt:
         print("\nПрограмма прервана пользователем")
