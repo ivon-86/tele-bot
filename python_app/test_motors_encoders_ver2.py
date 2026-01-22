@@ -31,6 +31,8 @@ RIGHT_ENC_B = 6        # GPIO6 (S2 правого мотора)
 LEFT_ENC_A = 17        # GPIO17 (S1 левого мотора)
 LEFT_ENC_B = 27        # GPIO27 (S2 левого мотора)
 
+MAX_PWM = 60 # При 70 срабатывает защита на АКБ
+
 # ============================================================================
 # ИНИЦИАЛИЗАЦИЯ PIGPIO
 # ============================================================================
@@ -47,6 +49,7 @@ if not pi.connected:
 
 class Motor:
     def __init__(self, pwm_pin, in1_pin, in2_pin, name="Motor"):
+        global MAX_PWM
         self.pwm_pin = pwm_pin
         self.in1_pin = in1_pin
         self.in2_pin = in2_pin
@@ -54,7 +57,8 @@ class Motor:
         self.speed = 0  # 0-100%
         
         # НАСТРОЙКИ L298N
-        self.MIN_PWM = 30  # Минимальный ШИМ для L298N (мёртвая зона)
+        self.MIN_PWM = 10  # Минимальный ШИМ для L298N (мёртвая зона)
+        #self.MAX_PWM = 60 # При 70 срабатывает защита на АКБ
         self.PWM_FREQ = 450  # Частота ШИМ - УМЕНЬШЕНА для устранения писка
         
         # Настройка пинов
@@ -64,7 +68,7 @@ class Motor:
         
         # Инициализация ШИМ с пониженной частотой
         pi.set_PWM_frequency(pwm_pin, self.PWM_FREQ)  # Уменьшенная частота!
-        pi.set_PWM_range(pwm_pin, 60)
+        pi.set_PWM_range(pwm_pin, MAX_PWM)
         pi.set_PWM_dutycycle(pwm_pin, 0)
         
         # Установка направления
@@ -89,9 +93,9 @@ class Motor:
         return speed_percent
     
     def set_speed(self, speed_percent, immediate=False):
-        """Установка скорости от -60 до 60"""
+        """Установка скорости от -MAX_PWM до MAX_PWM"""
         # Ограничиваем скорость
-        speed_percent = max(-100, min(100, speed_percent))
+        speed_percent = max(-MAX_PWM, min(MAX_PWM, speed_percent))
         
         # Применяем минимальный ШИМ
         actual_speed = self._pwm_with_minimum(speed_percent)
@@ -260,40 +264,40 @@ def test_directions():
 # ИСПРАВЛЕННЫЕ ФУНКЦИИ ДВИЖЕНИЯ
 # ============================================================================
 
-def robot_forward(speed=50):
+def robot_forward(speed=30):
     """Движение ВПЕРЁД - ИСПРАВЛЕНО"""
     print(f"\n▶ ВПЕРЁД: скорость {speed}%")
     left_motor.set_speed(speed)
     right_motor.set_speed(speed)
 
-def robot_backward(speed=50):
+def robot_backward(speed=30):
     """Движение НАЗАД - ИСПРАВЛЕНО"""
     print(f"\n◀ НАЗАД: скорость {speed}%")
     left_motor.set_speed(-speed)
     right_motor.set_speed(-speed)
 
-def robot_turn_left(speed=40):
+def robot_turn_left(speed=30):
     """ПОВОРОТ ВЛЕВО - ИСПРАВЛЕНО"""
     print(f"\n↰ ПОВОРОТ ВЛЕВО: скорость {speed}%")
     # Левый медленнее, правый быстрее
     left_motor.set_speed(speed * 0.3)
     right_motor.set_speed(speed)
 
-def robot_turn_right(speed=40):
+def robot_turn_right(speed=30):
     """ПОВОРОТ ВПРАВО - ИСПРАВЛЕНО"""
     print(f"\n↱ ПОВОРОТ ВПРАВО: скорость {speed}%")
     # Левый быстрее, правый медленнее
     left_motor.set_speed(speed)
     right_motor.set_speed(speed * 0.3)
 
-def robot_spin_left(speed=40):
+def robot_spin_left(speed=30):
     """РАЗВОРОТ НА МЕСТЕ ВЛЕВО - ИСПРАВЛЕНО"""
     print(f"\n↶ РАЗВОРОТ ВЛЕВО: скорость {speed}%")
     # Левый назад, правый вперёд
     left_motor.set_speed(-speed)
     right_motor.set_speed(speed)
 
-def robot_spin_right(speed=40):
+def robot_spin_right(speed=30):
     """РАЗВОРОТ НА МЕСТЕ ВПРАВО - ИСПРАВЛЕНО"""
     print(f"\n↷ РАЗВОРОТ ВПРАВО: скорость {speed}%")
     # Левый вперёд, правый назад
@@ -361,10 +365,10 @@ def simple_manual_control():
             elif ch == ' ':
                 robot_stop()
             elif ch == '+':
-                speed = min(60, speed + 10)
+                speed = min(MAX_PWM, speed + 10)
                 print(f"\n📈 Скорость: {speed}%")
             elif ch == '-':
-                speed = max(30, speed - 10)  # Минимум 30% из-за мёртвой зоны
+                speed = max(10, speed - 10)  # Минимум 30% из-за мёртвой зоны
                 print(f"\n📉 Скорость: {speed}%")
             else:
                 print(f"\n? Неизвестная команда: {ch}")
