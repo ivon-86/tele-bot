@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 """
-УЛУЧШЕННЫЙ скрипт управления роботом с:
-1. Плавным стартом для избежания высокого стартового тока
-2. Синхронизацией скорости моторов
-3. Конфигурируемыми MAX_PWM и MIN_PWM
-4. Частотой ШИМ 450 Гц
+УПРОЩЁННЫЙ И ИСПРАВЛЕННЫЙ скрипт управления роботом
+Без сложной многопоточности, с работающей синхронизацией
 """
 
 import pigpio
 import time
-import threading
 import sys
+import termios
+import tty
+import select
 import math
 
 # ============================================================================
@@ -31,21 +30,19 @@ RIGHT_ENC_B = 6        # GPIO6 (S2 правого мотора)
 LEFT_ENC_A = 17        # GPIO17 (S1 левого мотора)
 LEFT_ENC_B = 27        # GPIO27 (S2 левого мотора)
 
-# НАСТРОЙКИ ШИМ - НАСТРАИВАЙТЕ ЗДЕСЬ!
-PWM_FREQUENCY = 450    # Частота ШИМ в Гц (вы поставили 450)
+# НАСТРОЙКИ ШИМ
+PWM_FREQUENCY = 450    # Частота ШИМ в Гц
 MAX_PWM = 60           # Максимальный ШИМ в % (ограничиваем ток)
-MIN_PWM = 20           # Минимальный ШИМ в % (для L298N)
-DEAD_ZONE_PWM = 15     # Мёртвая зона ШИМ (0-15% не используются)
+MIN_PWM = 20           # Минимальный рабочий ШИМ
+START_PWM = 25         # Стартовый ШИМ (для плавного старта)
 
 # Настройки плавного старта
-SMOOTH_START_TIME = 0.8  # Время плавного старта в секундах
-SMOOTH_START_STEPS = 20   # Количество шагов плавного старта
+SMOOTH_START_TIME = 0.5  # Время плавного старта в секундах
 
 # Настройки синхронизации
 SYNC_ENABLED = True    # Включить синхронизацию скорости
-SYNC_KP = 0.3          # Коэффициент пропорциональной коррекции
-SYNC_KI = 0.1          # Коэффициент интегральной коррекции
-SYNC_KD = 0.05         # Коэффициент дифференциальной коррекции
+SYNC_CORRECTION = 0.1  # Коэффициент коррекции (0.0-1.0)
+SYNC_UPDATE_TIME = 0.1 # Время между коррекциями
 
 # ============================================================================
 # ИНИЦИАЛИЗАЦИЯ PIGPIO
@@ -58,20 +55,23 @@ if not pi.connected:
     sys.exit(1)
 
 # ============================================================================
-# УЛУЧШЕННЫЙ КЛАСС ЭНКОДЕРА ДЛЯ СИНХРОНИЗАЦИИ
+# ПРОСТОЙ И НАДЁЖНЫЙ КЛАСС ЭНКОДЕРА
 # ============================================================================
 
-class Encoder:
+class SimpleEncoder:
     def __init__(self, pin_a, pin_b, name="Encoder"):
         self.pin_a = pin_a
         self.pin_b = pin_b
         self.name = name
+        
+        # Счётчики
         self.count = 0
-        self.total_count = 0
-        self.rpm = 0.0
-        self.last_time = time.time()
+        self.total_pulses = 0
+        
+        # Для расчёта RPM
         self.last_count = 0
-        self.velocity_buffer = []
+        self.last_time = time.time()
+        self.rpm = 0.0
         
         # Настройка пинов
         pi.set_mode(pin_a, pigpio.INPUT)
@@ -79,40 +79,38 @@ class Encoder:
         pi.set_pull_up_down(pin_a, pigpio.PUD_UP)
         pi.set_pull_up_down(pin_b, pigpio.PUD_UP)
         
-        # Callback на канал A
-        self.cb_a = pi.callback(pin_a, pigpio.EITHER_EDGE, self._callback)
+        # Только один callback на канал A для простоты
+        self.cb = pi.callback(pin_a, pigpio.EITHER_EDGE, self._pulse_callback)
         
-        print(f"{name} на пинах A={pin_a}, B={pin_b}")
+        print(f"{name}: A={pin_a}, B={pin_b}")
     
-    def _callback(self, gpio, level, tick):
-        """Простой подсчёт импульсов"""
+    def _pulse_callback(self, gpio, level, tick):
+        """Обработчик импульса - просто считаем"""
         self.count += 1
-        self.total_count += 1
+        self.total_pulses += 1
     
     def update_rpm(self):
-        """Обновление RPM на основе текущих показаний"""
+        """Обновить расчёт RPM"""
         current_time = time.time()
         time_diff = current_time - self.last_time
         
-        if time_diff > 0.05:  # Обновляем не чаще чем каждые 50мс
-            count_diff = self.count - self.last_count
-            # 4 импульса на оборот (2 датчика × 2 фронта)
-            revolutions = count_diff / 4.0
+        if time_diff > 0.1:  # Обновляем каждые 100мс
+            pulses = self.count - self.last_count
+            
+            # 4 импульса на оборот (2 датчика Холла × 2 фронта)
+            revolutions = pulses / 4.0
             self.rpm = (revolutions / time_diff) * 60.0
             
-            # Сохраняем в буфер для сглаживания
-            self.velocity_buffer.append(self.rpm)
-            if len(self.velocity_buffer) > 5:
-                self.velocity_buffer.pop(0)
+            # Для отладки: ограничиваем разумные значения
+            if self.rpm > 2000:  # Нереальные значения - что-то не так
+                self.rpm = 0
             
             self.last_count = self.count
             self.last_time = current_time
     
     def get_rpm(self):
-        """Получить сглаженное RPM"""
+        """Получить текущее RPM"""
         self.update_rpm()
-        if self.velocity_buffer:
-            return sum(self.velocity_buffer) / len(self.velocity_buffer)
         return self.rpm
     
     def get_count(self):
@@ -120,81 +118,29 @@ class Encoder:
     
     def reset(self):
         self.count = 0
+        self.last_count = 0
+        self.last_time = time.time()
+        self.rpm = 0.0
     
     def cleanup(self):
-        if hasattr(self, 'cb_a'):
-            self.cb_a.cancel()
+        if hasattr(self, 'cb'):
+            self.cb.cancel()
 
 # ============================================================================
-# ПИД-КОНТРОЛЛЕР ДЛЯ СИНХРОНИЗАЦИИ
+# УПРОЩЁННЫЙ КЛАСС МОТОРА С ПЛАВНЫМ СТАРТОМ
 # ============================================================================
 
-class PIDController:
-    def __init__(self, Kp=1.0, Ki=0.0, Kd=0.0, setpoint=0, output_limits=(-50, 50)):
-        self.Kp = Kp
-        self.Ki = Ki
-        self.Kd = Kd
-        self.setpoint = setpoint
-        
-        self.output_limits = output_limits
-        self.integral = 0
-        self.previous_error = 0
-        self.last_time = time.time()
-    
-    def update(self, measurement):
-        """Вычисляет выходное значение ПИД-контроллера"""
-        current_time = time.time()
-        dt = current_time - self.last_time
-        
-        if dt <= 0:
-            return 0
-        
-        error = self.setpoint - measurement
-        
-        # Пропорциональная составляющая
-        P = self.Kp * error
-        
-        # Интегральная составляющая
-        self.integral += error * dt
-        I = self.Ki * self.integral
-        
-        # Дифференциальная составляющая
-        derivative = (error - self.previous_error) / dt
-        D = self.Kd * derivative
-        
-        # Суммируем составляющие
-        output = P + I + D
-        
-        # Ограничиваем выход
-        output = max(self.output_limits[0], min(self.output_limits[1], output))
-        
-        # Сохраняем состояние
-        self.previous_error = error
-        self.last_time = current_time
-        
-        return output
-    
-    def reset(self):
-        self.integral = 0
-        self.previous_error = 0
-        self.last_time = time.time()
-
-# ============================================================================
-# УЛУЧШЕННЫЙ КЛАСС МОТОРА С ПЛАВНЫМ СТАРТОМ
-# ============================================================================
-
-class Motor:
+class SimpleMotor:
     def __init__(self, pwm_pin, in1_pin, in2_pin, name="Motor"):
         self.pwm_pin = pwm_pin
         self.in1_pin = in1_pin
         self.in2_pin = in2_pin
         self.name = name
         
-        # Состояние мотора
-        self.target_speed = 0      # Целевая скорость (-100..100)
-        self.current_speed = 0     # Текущая скорость
-        self.is_smoothing = False  # Флаг плавного изменения
-        self.smooth_thread = None  # Поток для плавного изменения
+        # Состояние
+        self.current_speed = 0
+        self.target_speed = 0
+        self.last_speed_change = 0
         
         # Настройка пинов
         pi.set_mode(pwm_pin, pigpio.OUTPUT)
@@ -210,556 +156,518 @@ class Motor:
         pi.write(in1_pin, 0)
         pi.write(in2_pin, 0)
         
-        print(f"{name} инициализирован:")
-        print(f"  PWM={pwm_pin} ({PWM_FREQUENCY} Гц)")
-        print(f"  IN1={in1_pin}, IN2={in2_pin}")
-        print(f"  Min={MIN_PWM}%, Max={MAX_PWM}%, Dead zone={DEAD_ZONE_PWM}%")
+        print(f"{name}: PWM={pwm_pin}, IN1={in1_pin}, IN2={in2_pin}")
     
-    def _apply_speed_direct(self, speed_percent):
-        """Непосредственное применение скорости к мотору"""
+    def _apply_speed(self, speed):
+        """Непосредственное применение скорости"""
         # Ограничиваем скорость
-        speed_percent = max(-MAX_PWM, min(MAX_PWM, speed_percent))
-        
-        # Обработка мёртвой зоны
-        if -DEAD_ZONE_PWM < speed_percent < DEAD_ZONE_PWM:
-            speed_percent = 0
-        
-        self.current_speed = speed_percent
+        speed = max(-MAX_PWM, min(MAX_PWM, speed))
         
         # Управление направлением
-        if speed_percent > 0:
+        if speed > 0:
             # ВПЕРЁД
             pi.write(self.in1_pin, 1)
             pi.write(self.in2_pin, 0)
-            pwm_value = speed_percent
-        elif speed_percent < 0:
+            # Применяем минимальный ШИМ для L298N
+            pwm_value = max(MIN_PWM, speed)
+        elif speed < 0:
             # НАЗАД
             pi.write(self.in1_pin, 0)
             pi.write(self.in2_pin, 1)
-            pwm_value = -speed_percent
+            pwm_value = max(MIN_PWM, -speed)
         else:
             # СТОП
             pi.write(self.in1_pin, 0)
             pi.write(self.in2_pin, 0)
             pwm_value = 0
         
-        # Установка ШИМ с учётом минимального значения
-        if pwm_value > 0 and pwm_value < MIN_PWM:
-            pwm_value = MIN_PWM
-        
+        # Установка ШИМ
         pi.set_PWM_dutycycle(self.pwm_pin, pwm_value)
         
-        return speed_percent
+        self.current_speed = speed
+        return speed
     
-    def _smooth_to_target(self, target_speed):
-        """Плавное изменение скорости до целевого значения"""
-        if self.is_smoothing:
+    def set_speed_smooth(self, target_speed):
+        """Плавная установка скорости"""
+        self.target_speed = target_speed
+        
+        # Если уже на целевой скорости - ничего не делаем
+        if abs(self.current_speed - target_speed) < 1:
             return
         
-        self.is_smoothing = True
-        start_speed = self.current_speed
-        steps = SMOOTH_START_STEPS
-        duration = SMOOTH_START_TIME
+        # Определяем направление изменения
+        if target_speed > self.current_speed:
+            step = 1
+        else:
+            step = -1
         
-        # Для остановки делаем быстрее
-        if target_speed == 0:
-            duration = duration * 0.5
-        
-        step_time = duration / steps
-        step_value = (target_speed - start_speed) / steps
+        # Плавный разгон/торможение
+        steps = int(abs(target_speed - self.current_speed))
         
         for i in range(steps):
-            current_speed = start_speed + step_value * (i + 1)
-            self._apply_speed_direct(current_speed)
-            time.sleep(step_time)
+            new_speed = self.current_speed + step
+            self._apply_speed(new_speed)
+            time.sleep(SMOOTH_START_TIME / max(steps, 1))
         
-        # Финальная точная установка
-        self._apply_speed_direct(target_speed)
-        self.target_speed = target_speed
-        self.is_smoothing = False
+        # Финальная установка точного значения
+        self._apply_speed(target_speed)
     
-    def set_speed(self, speed_percent, immediate=False):
-        """Установка скорости с плавным стартом"""
-        # Ограничиваем целевую скорость
-        self.target_speed = max(-MAX_PWM, min(MAX_PWM, speed_percent))
-        
-        if immediate:
-            self._apply_speed_direct(self.target_speed)
+    def set_speed(self, speed, smooth=True):
+        """Установка скорости"""
+        if smooth and time.time() - self.last_speed_change > 0.1:
+            self.set_speed_smooth(speed)
         else:
-            # Запускаем плавное изменение в отдельном потоке
-            if self.smooth_thread and self.smooth_thread.is_alive():
-                self.smooth_thread.join(timeout=0.1)
-            
-            self.smooth_thread = threading.Thread(
-                target=self._smooth_to_target,
-                args=(self.target_speed,),
-                daemon=True
-            )
-            self.smooth_thread.start()
+            self._apply_speed(speed)
+        
+        self.last_speed_change = time.time()
     
-    def stop(self, immediate=False):
-        """Остановка мотора"""
-        self.set_speed(0, immediate=immediate)
+    def stop(self):
+        """Остановка"""
+        self._apply_speed(0)
     
     def brake(self):
-        """Торможение коротким замыканием"""
+        """Торможение"""
         pi.write(self.in1_pin, 1)
         pi.write(self.in2_pin, 1)
         pi.set_PWM_dutycycle(self.pwm_pin, 0)
-        self.target_speed = 0
         self.current_speed = 0
         print(f"{self.name}: ТОРМОЖЕНИЕ")
-    
-    def get_speed(self):
-        """Получить текущую скорость"""
-        return self.current_speed
 
 # ============================================================================
-# КЛАСС УПРАВЛЕНИЯ РОБОТОМ С СИНХРОНИЗАЦИЕЙ
+# ПРОСТОЙ КОНТРОЛЛЕР РОБОТА БЕЗ МНОГОПОТОЧНОСТИ
 # ============================================================================
 
-class RobotController:
-    def __init__(self, left_motor, right_motor, left_encoder, right_encoder):
-        self.left_motor = left_motor
-        self.right_motor = right_motor
-        self.left_encoder = left_encoder
-        self.right_encoder = right_encoder
+class SimpleRobot:
+    def __init__(self):
+        # Создаём моторы
+        self.left_motor = SimpleMotor(LEFT_PWM_PIN, LEFT_IN1_PIN, LEFT_IN2_PIN, "Левый")
+        self.right_motor = SimpleMotor(RIGHT_PWM_PIN, RIGHT_IN1_PIN, RIGHT_IN2_PIN, "Правый")
         
-        # ПИД-контроллеры для синхронизации
-        self.left_pid = PIDController(
-            Kp=SYNC_KP, Ki=SYNC_KI, Kd=SYNC_KD,
-            output_limits=(-20, 20)
-        )
-        self.right_pid = PIDController(
-            Kp=SYNC_KP, Ki=SYNC_KI, Kd=SYNC_KD,
-            output_limits=(-20, 20)
-        )
+        # Создаём энкодеры
+        self.left_encoder = SimpleEncoder(LEFT_ENC_A, LEFT_ENC_B, "Левый энк.")
+        self.right_encoder = SimpleEncoder(RIGHT_ENC_A, RIGHT_ENC_B, "Правый энк.")
         
-        # Текущее состояние
-        self.target_left_speed = 0
-        self.target_right_speed = 0
+        # Состояние
         self.sync_enabled = SYNC_ENABLED
-        self.sync_thread = None
-        self.running = True
+        self.last_sync_time = 0
+        self.left_counts_history = []
+        self.right_counts_history = []
         
-        # Запуск потока синхронизации
-        if self.sync_enabled:
-            self.start_sync()
-        
-        print("🤖 Контроллер робота инициализирован")
-        if SYNC_ENABLED:
-            print(f"  Синхронизация: ВКЛ (Kp={SYNC_KP}, Ki={SYNC_KI}, Kd={SYNC_KD})")
-        else:
-            print("  Синхронизация: ВЫКЛ")
+        print("\n" + "=" * 60)
+        print("🤖 ПРОСТОЙ КОНТРОЛЛЕР РОБОТА")
+        print("=" * 60)
+        print(f"MAX_PWM: {MAX_PWM}%, MIN_PWM: {MIN_PWM}%")
+        print(f"Плавный старт: {SMOOTH_START_TIME} сек")
+        print(f"Синхронизация: {'ВКЛ' if SYNC_ENABLED else 'ВЫКЛ'}")
+        print("=" * 60)
     
-    def start_sync(self):
-        """Запуск потока синхронизации скорости"""
-        if self.sync_thread and self.sync_thread.is_alive():
+    def update_sync(self):
+        """Простая синхронизация скорости"""
+        if not self.sync_enabled:
             return
         
-        self.running = True
-        self.sync_thread = threading.Thread(target=self._sync_loop, daemon=True)
-        self.sync_thread.start()
-    
-    def stop_sync(self):
-        """Остановка синхронизации"""
-        self.running = False
-        if self.sync_thread:
-            self.sync_thread.join(timeout=1)
-    
-    def _sync_loop(self):
-        """Цикл синхронизации скорости моторов"""
-        while self.running:
-            try:
-                # Получаем текущие RPM
-                left_rpm = self.left_encoder.get_rpm()
-                right_rpm = self.right_encoder.get_rpm()
+        current_time = time.time()
+        if current_time - self.last_sync_time < SYNC_UPDATE_TIME:
+            return
+        
+        # Получаем текущие показания
+        left_count = self.left_encoder.get_count()
+        right_count = self.right_encoder.get_count()
+        
+        # Сохраняем в историю (последние 5 измерений)
+        self.left_counts_history.append(left_count)
+        self.right_counts_history.append(right_count)
+        
+        if len(self.left_counts_history) > 5:
+            self.left_counts_history.pop(0)
+            self.right_counts_history.pop(0)
+        
+        # Если история накопилась
+        if len(self.left_counts_history) >= 3:
+            # Вычисляем разницу скоростей
+            left_diff = self.left_counts_history[-1] - self.left_counts_history[0]
+            right_diff = self.right_counts_history[-1] - self.right_counts_history[0]
+            
+            # Если оба мотора работают
+            if abs(self.left_motor.current_speed) > 10 and abs(self.right_motor.current_speed) > 10:
+                # Вычисляем разницу
+                diff = left_diff - right_diff
                 
-                # Если оба мотора работают
-                if abs(self.target_left_speed) > 5 and abs(self.target_right_speed) > 5:
-                    # Вычисляем желаемое RPM на основе целевой скорости
-                    # Простая линейная зависимость: 100% скорости = ~150 RPM
-                    target_rpm = (abs(self.target_left_speed) / 100.0) * 150
+                # Применяем простую коррекцию
+                if abs(diff) > 2:  # Порог чувствительности
+                    correction = diff * SYNC_CORRECTION
                     
-                    # Корректируем левый мотор
-                    left_correction = self.left_pid.update(left_rpm - target_rpm)
-                    # Корректируем правый мотор
-                    right_correction = self.right_pid.update(right_rpm - target_rpm)
+                    # Ограничиваем коррекцию
+                    correction = max(-10, min(10, correction))
                     
-                    # Применяем коррекцию (но не слишком часто)
-                    current_time = time.time()
-                    if hasattr(self, '_last_sync_time'):
-                        if current_time - self._last_sync_time > 0.2:  # Каждые 200мс
-                            self._apply_sync_correction(left_correction, right_correction)
-                            self._last_sync_time = current_time
-                    else:
-                        self._last_sync_time = current_time
-                
-                time.sleep(0.05)  # 20 Гц частота синхронизации
-                
-            except Exception as e:
-                print(f"Ошибка синхронизации: {e}")
-                time.sleep(0.1)
+                    # Применяем к моторам
+                    new_left = self.left_motor.current_speed - correction
+                    new_right = self.right_motor.current_speed + correction
+                    
+                    # Ограничиваем
+                    new_left = max(-MAX_PWM, min(MAX_PWM, new_left))
+                    new_right = max(-MAX_PWM, min(MAX_PWM, new_right))
+                    
+                    # Применяем без плавности (иначе будут задержки)
+                    self.left_motor._apply_speed(new_left)
+                    self.right_motor._apply_speed(new_right)
+        
+        self.last_sync_time = current_time
     
-    def _apply_sync_correction(self, left_correction, right_correction):
-        """Применение корректировок скорости"""
-        # Вычисляем новые скорости
-        new_left_speed = self.target_left_speed + left_correction
-        new_right_speed = self.target_right_speed + right_correction
+    def move(self, left_speed, right_speed):
+        """Движение робота"""
+        self.left_motor.set_speed(left_speed)
+        self.right_motor.set_speed(right_speed)
         
-        # Ограничиваем скорости
-        new_left_speed = max(-MAX_PWM, min(MAX_PWM, new_left_speed))
-        new_right_speed = max(-MAX_PWM, min(MAX_PWM, new_right_speed))
-        
-        # Применяем скорости
-        self.left_motor.set_speed(new_left_speed, immediate=True)
-        self.right_motor.set_speed(new_right_speed, immediate=True)
+        # Сбрасываем историю при смене направления
+        if (left_speed * self.left_motor.current_speed < 0 or
+            right_speed * self.right_motor.current_speed < 0):
+            self.left_counts_history = []
+            self.right_counts_history = []
     
-    def move(self, left_speed, right_speed, immediate=False):
-        """Команда движения робота"""
-        self.target_left_speed = left_speed
-        self.target_right_speed = right_speed
-        
-        # Сбрасываем интегральные составляющие ПИД при смене направления
-        if (left_speed * self.left_motor.get_speed() < 0 or
-            right_speed * self.right_motor.get_speed() < 0):
-            self.left_pid.reset()
-            self.right_pid.reset()
-        
-        # Если синхронизация выключена, сразу применяем скорости
-        if not self.sync_enabled or immediate:
-            self.left_motor.set_speed(left_speed, immediate=immediate)
-            self.right_motor.set_speed(right_speed, immediate=immediate)
-    
-    def forward(self, speed=50):
-        """Движение вперёд"""
+    def forward(self, speed):
         self.move(speed, speed)
-        print(f"▶ ВПЕРЁД: {speed}%")
+        print(f"▶ ВПЕРЁД {speed}%")
     
-    def backward(self, speed=50):
-        """Движение назад"""
+    def backward(self, speed):
         self.move(-speed, -speed)
-        print(f"◀ НАЗАД: {speed}%")
+        print(f"◀ НАЗАД {speed}%")
     
-    def turn_left(self, speed=40):
-        """Поворот влево"""
-        self.move(speed * 0.3, speed)
-        print(f"↰ ПОВОРОТ ВЛЕВО: {speed}%")
+    def turn_left(self, speed):
+        self.move(speed * 0.4, speed)
+        print(f"↰ ВЛЕВО {speed}%")
     
-    def turn_right(self, speed=40):
-        """Поворот вправо"""
-        self.move(speed, speed * 0.3)
-        print(f"↱ ПОВОРОТ ВПРАВО: {speed}%")
+    def turn_right(self, speed):
+        self.move(speed, speed * 0.4)
+        print(f"↱ ВПРАВО {speed}%")
     
-    def spin_left(self, speed=40):
-        """Разворот на месте влево"""
-        self.move(-speed, speed)
-        print(f"↶ РАЗВОРОТ ВЛЕВО: {speed}%")
+    def spin_left(self, speed):
+        self.move(-speed * 0.7, speed * 0.7)
+        print(f"↶ РАЗВОРОТ ВЛЕВО {speed}%")
     
-    def spin_right(self, speed=40):
-        """Разворот на месте вправо"""
-        self.move(speed, -speed)
-        print(f"↷ РАЗВОРОТ ВПРАВО: {speed}%")
+    def spin_right(self, speed):
+        self.move(speed * 0.7, -speed * 0.7)
+        print(f"↷ РАЗВОРОТ ВПРАВО {speed}%")
     
-    def stop(self, immediate=False):
-        """Остановка"""
-        self.move(0, 0, immediate=immediate)
+    def stop(self):
+        self.left_motor.stop()
+        self.right_motor.stop()
         print("⏹ СТОП")
     
+    def brake(self):
+        self.left_motor.brake()
+        self.right_motor.brake()
+        print("⚠ ТОРМОЖЕНИЕ")
+    
     def get_status(self):
-        """Получить статус робота"""
+        """Получить статус"""
+        left_rpm = self.left_encoder.get_rpm()
+        right_rpm = self.right_encoder.get_rpm()
+        
+        # Ограничиваем разумные значения RPM
+        left_rpm = min(2000, left_rpm)
+        right_rpm = min(2000, right_rpm)
+        
         return {
-            'left_speed': self.left_motor.get_speed(),
-            'right_speed': self.right_motor.get_speed(),
-            'left_rpm': self.left_encoder.get_rpm(),
-            'right_rpm': self.right_encoder.get_rpm(),
+            'left_speed': self.left_motor.current_speed,
+            'right_speed': self.right_motor.current_speed,
+            'left_rpm': left_rpm,
+            'right_rpm': right_rpm,
             'left_count': self.left_encoder.get_count(),
             'right_count': self.right_encoder.get_count(),
         }
     
     def cleanup(self):
         """Очистка ресурсов"""
-        self.running = False
-        self.stop_sync()
-        self.stop(immediate=True)
+        self.stop()
+        self.left_encoder.cleanup()
+        self.right_encoder.cleanup()
 
 # ============================================================================
-# ИНИЦИАЛИЗАЦИЯ СИСТЕМЫ
+# ПРОСТОЕ РУЧНОЕ УПРАВЛЕНИЕ
 # ============================================================================
 
-print("=" * 60)
-print("🤖 УЛУЧШЕННАЯ СИСТЕМА УПРАВЛЕНИЯ РОБОТОМ")
-print("=" * 60)
-print(f"Конфигурация:")
-print(f"  Частота ШИМ: {PWM_FREQUENCY} Гц")
-print(f"  Макс.ШИМ: {MAX_PWM}%, Мин.ШИМ: {MIN_PWM}%")
-print(f"  Плавный старт: {SMOOTH_START_TIME} сек")
-print("=" * 60)
-
-# Создаём моторы
-left_motor = Motor(LEFT_PWM_PIN, LEFT_IN1_PIN, LEFT_IN2_PIN, "Левый мотор")
-right_motor = Motor(RIGHT_PWM_PIN, RIGHT_IN1_PIN, RIGHT_IN2_PIN, "Правый мотор")
-
-# Создаём энкодеры
-left_encoder = Encoder(LEFT_ENC_A, LEFT_ENC_B, "Левый энкодер")
-right_encoder = Encoder(RIGHT_ENC_A, RIGHT_ENC_B, "Правый энкодер")
-
-# Создаём контроллер робота
-robot = RobotController(left_motor, right_motor, left_encoder, right_encoder)
-
-time.sleep(1)
-print("✅ Система готова к работе")
+def simple_control():
+    """Простое ручное управление"""
+    robot = SimpleRobot()
+    
+    print("\n" + "=" * 60)
+    print("🎮 ПРОСТОЕ РУЧНОЕ УПРАВЛЕНИЕ")
+    print("=" * 60)
+    print("Управление:")
+    print("  W - Вперёд          S - Назад")
+    print("  A - Влево           D - Вправо")
+    print("  Q - Разворот влево  E - Разворот вправо")
+    print("  Space - Стоп        B - Торможение")
+    print("  + - Увеличить скорость")
+    print("  - - Уменьшить скорость")
+    print("  M - Вкл/Выкл синхронизацию")
+    print("  X - Выход")
+    print("=" * 60)
+    
+    speed = 40
+    last_status_time = time.time()
+    
+    def get_key():
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setraw(fd)
+            rlist, _, _ = select.select([sys.stdin], [], [], 0.05)
+            if rlist:
+                ch = sys.stdin.read(1)
+                return ch
+            return ''
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+    
+    print(f"\nТекущая скорость: {speed}%")
+    print("Синхронизация: " + ("ВКЛ" if robot.sync_enabled else "ВЫКЛ"))
+    print("\nНажмите клавишу для управления...")
+    
+    try:
+        while True:
+            # Обновляем синхронизацию
+            robot.update_sync()
+            
+            # Читаем клавишу
+            ch = get_key()
+            
+            if ch:
+                ch = ch.lower()
+                
+                if ch == 'x':
+                    break
+                elif ch == 'w':
+                    robot.forward(speed)
+                elif ch == 's':
+                    robot.backward(speed)
+                elif ch == 'a':
+                    robot.turn_left(speed)
+                elif ch == 'd':
+                    robot.turn_right(speed)
+                elif ch == 'q':
+                    robot.spin_left(speed)
+                elif ch == 'e':
+                    robot.spin_right(speed)
+                elif ch == ' ':
+                    robot.stop()
+                elif ch == 'b':
+                    robot.brake()
+                elif ch == '+':
+                    speed = min(MAX_PWM, speed + 5)
+                    print(f"\n📈 Скорость: {speed}%")
+                elif ch == '-':
+                    speed = max(START_PWM, speed - 5)
+                    print(f"\n📉 Скорость: {speed}%")
+                elif ch == 'm':
+                    robot.sync_enabled = not robot.sync_enabled
+                    status = "ВКЛ" if robot.sync_enabled else "ВЫКЛ"
+                    print(f"\n🔄 Синхронизация: {status}")
+                else:
+                    print(f"\n? Неизвестная команда: {ch}")
+            
+            # Выводим статус каждые 0.3 секунды
+            current_time = time.time()
+            if current_time - last_status_time > 0.3:
+                status = robot.get_status()
+                
+                # Очищаем строку и выводим новый статус
+                sys.stdout.write('\r' + ' ' * 80 + '\r')
+                sys.stdout.write(
+                    f"Л:{status['left_speed']:3}%({status['left_rpm']:5.0f}RPM) "
+                    f"П:{status['right_speed']:3}%({status['right_rpm']:5.0f}RPM) "
+                    f"Спиды: Л={status['left_count']:5d} П={status['right_count']:5d}"
+                )
+                sys.stdout.flush()
+                
+                last_status_time = current_time
+    
+    except KeyboardInterrupt:
+        pass
+    finally:
+        robot.stop()
+        print("\n\n✅ Управление завершено")
+        robot.cleanup()
 
 # ============================================================================
 # ТЕСТ ПЛАВНОГО СТАРТА
 # ============================================================================
 
 def test_smooth_start():
-    """Тест плавного старта и остановки"""
+    """Тест плавного старта"""
     print("\n" + "=" * 60)
     print("🌊 ТЕСТ ПЛАВНОГО СТАРТА")
     print("=" * 60)
+    
+    robot = SimpleRobot()
+    robot.sync_enabled = False  # Отключаем синхронизацию для чистоты теста
+    
     print("Поднимите робота!")
     input("Нажмите Enter для начала...")
     
-    test_speeds = [20, 30, 40, 50, MAX_PWM]
+    print("\n1. Плавный старт вперёд от 0 до 50%")
+    for speed in range(0, 51, 5):
+        robot.left_motor.set_speed(speed)
+        robot.right_motor.set_speed(speed)
+        print(f"Скорость: {speed}%")
+        time.sleep(0.1)
     
-    for speed in test_speeds:
-        print(f"\nТест скорости {speed}%")
-        
-        print("Плавный старт вперёд...")
-        robot.forward(speed)
-        time.sleep(3)
-        
-        print("Плавная остановка...")
-        robot.stop()
-        time.sleep(1)
-        
-        print("Плавный старт назад...")
-        robot.backward(speed)
-        time.sleep(3)
-        
-        print("Плавная остановка...")
-        robot.stop()
-        time.sleep(2)
+    time.sleep(2)
     
-    print("\n✅ Тест плавного старта завершён")
+    print("\n2. Плавная остановка")
+    for speed in range(50, -1, -5):
+        robot.left_motor.set_speed(speed)
+        robot.right_motor.set_speed(speed)
+        print(f"Скорость: {speed}%")
+        time.sleep(0.1)
+    
+    time.sleep(1)
+    
+    print("\n3. Плавный старт назад")
+    for speed in range(0, -51, -5):
+        robot.left_motor.set_speed(speed)
+        robot.right_motor.set_speed(speed)
+        print(f"Скорость: {speed}%")
+        time.sleep(0.1)
+    
+    time.sleep(2)
+    
+    print("\n4. Плавная остановка")
+    for speed in range(-50, 1, 5):
+        robot.left_motor.set_speed(speed)
+        robot.right_motor.set_speed(speed)
+        print(f"Скорость: {speed}%")
+        time.sleep(0.1)
+    
+    robot.stop()
+    print("\n✅ Тест завершён")
+    robot.cleanup()
 
 # ============================================================================
 # ТЕСТ СИНХРОНИЗАЦИИ
 # ============================================================================
 
-def test_synchronization():
-    """Тест синхронизации скорости моторов"""
+def test_sync():
+    """Тест синхронизации"""
     print("\n" + "=" * 60)
-    print("⚖️ ТЕСТ СИНХРОНИЗАЦИИ СКОРОСТИ")
+    print("⚖️ ТЕСТ СИНХРОНИЗАЦИИ")
     print("=" * 60)
-    print("Поднимите робота!")
-    input("Нажмите Enter для начала...")
     
-    print("\n1. Движение вперёд без синхронизации")
+    robot = SimpleRobot()
+    
+    print("1. Тест без синхронизации")
     robot.sync_enabled = False
-    robot.forward(50)
+    robot.left_encoder.reset()
+    robot.right_encoder.reset()
     
-    print("\nСчитаем импульсы энкодеров за 5 секунд...")
-    left_encoder.reset()
-    right_encoder.reset()
+    robot.forward(50)
     time.sleep(5)
     
-    left_count = left_encoder.get_count()
-    right_count = right_encoder.get_count()
-    diff = left_count - right_count
-    
-    print(f"Левый: {left_count} имп, Правый: {right_count} имп")
-    print(f"Разница: {diff} имп ({abs(diff)/max(left_count, right_count)*100:.1f}%)")
+    left_no_sync = robot.left_encoder.get_count()
+    right_no_sync = robot.right_encoder.get_count()
+    diff_no_sync = left_no_sync - right_no_sync
     
     robot.stop()
     time.sleep(2)
     
-    print("\n2. Движение вперёд с синхронизацией")
+    print("\n2. Тест с синхронизацией")
     robot.sync_enabled = True
-    left_encoder.reset()
-    right_encoder.reset()
+    robot.left_encoder.reset()
+    robot.right_encoder.reset()
     
     robot.forward(50)
     time.sleep(5)
     
-    left_count = left_encoder.get_count()
-    right_count = right_encoder.get_count()
-    diff = left_count - right_count
-    
-    print(f"Левый: {left_count} имп, Правый: {right_count} имп")
-    print(f"Разница: {diff} имп ({abs(diff)/max(left_count, right_count)*100:.1f}%)")
+    left_with_sync = robot.left_encoder.get_count()
+    right_with_sync = robot.right_encoder.get_count()
+    diff_with_sync = left_with_sync - right_with_sync
     
     robot.stop()
-    print("\n✅ Тест синхронизации завершён")
-
-# ============================================================================
-# ПРОСТОЕ РУЧНОЕ УПРАВЛЕНИЕ
-# ============================================================================
-
-def manual_control():
-    """Простое ручное управление с отображением статуса"""
+    
     print("\n" + "=" * 60)
-    print("🎮 РУЧНОЕ УПРАВЛЕНИЕ РОБОТОМ")
+    print("📊 РЕЗУЛЬТАТЫ:")
     print("=" * 60)
-    print("Управление:")
-    print("  W - Вперёд    S - Назад")
-    print("  A - Влево     D - Вправо")
-    print("  Q - Разворот влево  E - Разворот вправо")
-    print("  Space - Стоп  B - Торможение")
-    print("  + - Увеличить скорость")
-    print("  - - Уменьшить скорость")
-    print("  X - Выход")
-    print("=" * 60)
+    print(f"Без синхронизации:")
+    print(f"  Левый: {left_no_sync} имп")
+    print(f"  Правый: {right_no_sync} имп")
+    print(f"  Разница: {diff_no_sync} имп")
     
-    speed = 30
-    last_status_time = time.time()
+    print(f"\nС синхронизацией:")
+    print(f"  Левый: {left_with_sync} имп")
+    print(f"  Правый: {right_with_sync} имп")
+    print(f"  Разница: {diff_with_sync} имп")
     
-    import termios, tty
+    improvement = (abs(diff_no_sync) - abs(diff_with_sync)) / max(abs(diff_no_sync), 1) * 100
+    print(f"\n📈 Улучшение: {improvement:.1f}%")
     
-    def getch():
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
-        try:
-            tty.setraw(fd)
-            ch = sys.stdin.read(1)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        return ch
-    
-    print(f"\nТекущая скорость: {speed}%")
-    print("Синхронизация: " + ("ВКЛ" if robot.sync_enabled else "ВЫКЛ"))
-    print("Нажмите любую клавишу...")
-    
-    try:
-        while True:
-            ch = getch().lower()
-            
-            if ch == 'x':
-                break
-            elif ch == 'w':
-                robot.forward(speed)
-            elif ch == 's':
-                robot.backward(speed)
-            elif ch == 'a':
-                robot.turn_left(speed)
-            elif ch == 'd':
-                robot.turn_right(speed)
-            elif ch == 'q':
-                robot.spin_left(speed * 0.7)
-            elif ch == 'e':
-                robot.spin_right(speed * 0.7)
-            elif ch == ' ':
-                robot.stop()
-            elif ch == 'b':
-                left_motor.brake()
-                right_motor.brake()
-            elif ch == '+':
-                speed = min(MAX_PWM, speed + 5)
-                print(f"\n📈 Скорость: {speed}%")
-            elif ch == '-':
-                speed = max(MIN_PWM, speed - 5)
-                print(f"\n📉 Скорость: {speed}%")
-            elif ch == 'm':
-                # Переключение синхронизации
-                robot.sync_enabled = not robot.sync_enabled
-                status = "ВКЛ" if robot.sync_enabled else "ВЫКЛ"
-                print(f"\n🔄 Синхронизация: {status}")
-            else:
-                print(f"\n? Неизвестная команда: {ch}")
-            
-            # Выводим статус каждые 0.5 секунды
-            current_time = time.time()
-            if current_time - last_status_time > 0.5:
-                status = robot.get_status()
-                print(f"\rЛ:{status['left_speed']:3}% ({status['left_rpm']:5.1f}RPM) | "
-                      f"П:{status['right_speed']:3}% ({status['right_rpm']:5.1f}RPM) | "
-                      f"Счёт: Л={status['left_count']:4d} П={status['right_count']:4d}", end="")
-                last_status_time = current_time
-            
-    except KeyboardInterrupt:
-        pass
-    finally:
-        robot.stop(immediate=True)
-        print("\n\n✅ Управление завершено")
+    robot.cleanup()
 
 # ============================================================================
 # ГЛАВНОЕ МЕНЮ
 # ============================================================================
 
-def main():
-    """Главное меню"""
+def main_menu():
+    """Простое меню"""
     print("\n" + "=" * 60)
-    print("🤖 ГЛАВНОЕ МЕНЮ УПРАВЛЕНИЯ")
+    print("🤖 ПРОСТОЕ МЕНЮ УПРАВЛЕНИЯ")
     print("=" * 60)
     
     while True:
         print("\nВыберите опцию:")
-        print("1. Тест плавного старта")
-        print("2. Тест синхронизации скорости")
-        print("3. Ручное управление")
-        print("4. Показать текущие настройки")
-        print("5. Сбросить счётчики энкодеров")
+        print("1. Ручное управление (рекомендуется сначала)")
+        print("2. Тест плавного старта")
+        print("3. Тест синхронизации")
+        print("4. Показать настройки")
         print("0. Выход")
-        print("-" * 40)
         
         try:
-            choice = input("Ваш выбор (0-5): ").strip()
+            choice = input("\nВаш выбор (0-4): ").strip()
             
             if choice == '0':
                 break
             elif choice == '1':
-                test_smooth_start()
+                simple_control()
             elif choice == '2':
-                test_synchronization()
+                test_smooth_start()
             elif choice == '3':
-                manual_control()
+                test_sync()
             elif choice == '4':
-                print("\n📋 ТЕКУЩИЕ НАСТРОЙКИ:")
-                print(f"  Частота ШИМ: {PWM_FREQUENCY} Гц")
+                print(f"\n📋 НАСТРОЙКИ:")
                 print(f"  MAX_PWM: {MAX_PWM}%")
                 print(f"  MIN_PWM: {MIN_PWM}%")
+                print(f"  START_PWM: {START_PWM}%")
+                print(f"  Частота ШИМ: {PWM_FREQUENCY} Гц")
                 print(f"  Плавный старт: {SMOOTH_START_TIME} сек")
-                print(f"  Синхронизация: {'ВКЛ' if SYNC_ENABLED else 'ВЫКЛ'}")
-            elif choice == '5':
-                left_encoder.reset()
-                right_encoder.reset()
-                print("✅ Счётчики энкодеров сброшены")
+                print(f"  Синхронизация: {SYNC_CORRECTION}")
             else:
                 print("❌ Неверный выбор")
         
         except KeyboardInterrupt:
-            print("\n\n🛑 Выход из меню")
+            print("\n\n🛑 Выход")
             break
         except Exception as e:
             print(f"❌ Ошибка: {e}")
 
 # ============================================================================
-# ЗАПУСК ПРОГРАММЫ
+# ЗАПУСК
 # ============================================================================
 
 if __name__ == "__main__":
     try:
         print("\n" + "=" * 60)
-        print("🚀 ЗАПУСК УЛУЧШЕННОЙ СИСТЕМЫ УПРАВЛЕНИЯ")
+        print("🚀 ЗАПУСК ПРОСТОЙ СИСТЕМЫ УПРАВЛЕНИЯ")
         print("=" * 60)
-        print("Для выхода в любой момент нажмите Ctrl+C")
-        time.sleep(2)
         
-        main()
+        main_menu()
         
     except KeyboardInterrupt:
-        print("\n\n🛑 Программа прервана пользователем")
+        print("\n\n🛑 Программа прервана")
     except Exception as e:
-        print(f"\n❌ Критическая ошибка: {e}")
+        print(f"\n❌ Ошибка: {e}")
         import traceback
         traceback.print_exc()
     finally:
-        # Безопасное завершение
         print("\n🔌 Завершение работы...")
-        robot.cleanup()
-        left_encoder.cleanup()
-        right_encoder.cleanup()
         pi.stop()
         print("✅ Все ресурсы освобождены")
