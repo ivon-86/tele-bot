@@ -33,7 +33,7 @@ LEFT_ENC_B = 27        # GPIO27 (S2 левого мотора)
 
 # НАСТРОЙКИ ШИМ - НАСТРАИВАЙТЕ ЗДЕСЬ!
 PWM_FREQUENCY = 450    # Частота ШИМ в Гц (вы поставили 450)
-MAX_PWM = 80           # Максимальный ШИМ в % (ограничиваем ток)
+MAX_PWM = 60           # Максимальный ШИМ в % (ограничиваем ток)
 MIN_PWM = 20           # Минимальный ШИМ в % (для L298N)
 DEAD_ZONE_PWM = 15     # Мёртвая зона ШИМ (0-15% не используются)
 
@@ -522,7 +522,7 @@ def test_smooth_start():
     print("Поднимите робота!")
     input("Нажмите Enter для начала...")
     
-    test_speeds = [30, 50, 70, MAX_PWM]
+    test_speeds = [20, 30, 40, 50, MAX_PWM]
     
     for speed in test_speeds:
         print(f"\nТест скорости {speed}%")
@@ -613,7 +613,7 @@ def manual_control():
     print("  X - Выход")
     print("=" * 60)
     
-    speed = 50
+    speed = 30
     last_status_time = time.time()
     
     import termios, tty
@@ -656,10 +656,10 @@ def manual_control():
                 left_motor.brake()
                 right_motor.brake()
             elif ch == '+':
-                speed = min(MAX_PWM, speed + 10)
+                speed = min(MAX_PWM, speed + 5)
                 print(f"\n📈 Скорость: {speed}%")
             elif ch == '-':
-                speed = max(MIN_PWM, speed - 10)
+                speed = max(MIN_PWM, speed - 5)
                 print(f"\n📉 Скорость: {speed}%")
             elif ch == 'm':
                 # Переключение синхронизации
