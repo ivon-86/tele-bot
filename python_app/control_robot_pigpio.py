@@ -29,7 +29,7 @@ class RobotChassis:
         self.right_encoder = EncoderCounter(RIGHT_ENC_A, "Правый энк.")
         self.curent_speed = 0
 
-    def transform_value_control_speed(speed): # Преобразуем входные данные от джойстика -100 : 100 в данные заполнения PWM в соответствии с настройками мотора
+    def transform_value_control_speed(self, speed): # Преобразуем входные данные от джойстика -100 : 100 в данные заполнения PWM в соответствии с настройками мотора
         if speed < 0:
             # Исходный диапазон: -100..0
             # Новый диапазон: -MAX_PWM..-MIN_PWM
