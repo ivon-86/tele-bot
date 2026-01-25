@@ -80,7 +80,9 @@ def control():
     controlX, controlY = float(request.args.get('x')) / 100.0, float(request.args.get('y')) / 100.0
     if not (controlX==0 and controlY==0): # если не стоим на месте отправляем кординаты джойстика на управление движением роботом
         robot_chassis.move_robot(controlX, controlY)
-
+    else:
+        robot_chassis.stop_robot()
+        
     return '', 200, {'Content-Type': 'text/plain'}
 
 

@@ -160,6 +160,7 @@ class Motor:
     def stop(self):
         """Остановка"""
         self._apply_pwm_direct(0)
+        
     
     def brake(self):
         """Торможение"""

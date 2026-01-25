@@ -50,6 +50,10 @@ class RobotChassis:
         # speedA = max(-MAX_PWM, min(speedA, MAX_PWM))    # функция аналогичная constrain в arduino
         # speedB = max(-MAX_PWM, min(speedB, MAX_PWM))    # функция аналогичная constrain в arduino
 
+    def stop_robot(self):
+        self.left_motor.stop()
+        self.right_motor.stop()
+        
     
     
     def stop(self):
