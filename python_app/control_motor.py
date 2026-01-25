@@ -146,11 +146,11 @@ class Motor:
         # Вычисляем количество шагов
         steps = abs(current - target) // abs(step)
         
-        # Плавное изменение
-        for i in range(steps):
-            new_pwm = current + step
-            self._apply_pwm_direct(new_pwm)
-            time.sleep(SMOOTH_DELAY) #      задержку без delay? !!!!!
+        # # Плавное изменение
+        # for i in range(steps):
+        #     new_pwm = current + step
+        #     self._apply_pwm_direct(new_pwm)
+        #     time.sleep(SMOOTH_DELAY) #      задержку без delay? !!!!!
         
         # Финальная установка точного значения
         self._apply_pwm_direct(target)
