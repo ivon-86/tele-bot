@@ -32,7 +32,7 @@ START_PWM = 30         # Стартовый ШИМ ?
 
 # Настройки плавного старта
 SMOOTH_STEP = 5        # Шаг изменения скорости для плавности
-SMOOTH_DELAY = 0.05    # Задержка между шагами
+SMOOTH_DELAY = 0.02    # Задержка между шагами
 
 # ============================================================================
 # ИНИЦИАЛИЗАЦИЯ PIGPIO
@@ -146,12 +146,12 @@ class Motor:
         
         # Вычисляем количество шагов
         steps = abs(current - target) // abs(step)
-        
-        # Плавное изменение
-        for i in range(steps):
-            new_pwm = current + step
-            self._apply_pwm_direct(new_pwm)
-            time.sleep(SMOOTH_DELAY) #      задержку без delay? !!!!!
+        if steps >= 2:
+            # Плавное изменение
+            for i in range(steps):
+                new_pwm = current + step
+                self._apply_pwm_direct(new_pwm)
+                time.sleep(SMOOTH_DELAY) #      задержку без delay? !!!!!
         
         # Финальная установка точного значения
         self._apply_pwm_direct(target)
