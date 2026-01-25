@@ -3,6 +3,62 @@ import pigpio
 import time
 import math
 
+import sys
+# # ============================================================================
+# # ИНИЦИАЛИЗАЦИЯ PIGPIO
+# # ============================================================================
+
+# pi = pigpio.pi()
+# if not pi.connected:
+#     print("Ошибка: Не удалось подключиться к pigpio демону")
+#     print("Запустите: sudo pigpiod")
+#     sys.exit(1)
+from control_motor import *
+
+def cleanup():
+        pi.stop()
+
+class RobotChassis:
+    def __init__(self):
+        # Создаём моторы
+        self.left_motor = Motor(LEFT_PWM_PIN, LEFT_IN1_PIN, LEFT_IN2_PIN, "Левый")
+        self.right_motor = Motor(RIGHT_PWM_PIN, RIGHT_IN1_PIN, RIGHT_IN2_PIN, "Правый")
+        
+        # Создаём счётчики энкодеров
+        self.left_encoder = EncoderCounter(LEFT_ENC_A, "Левый энк.")
+        self.right_encoder = EncoderCounter(RIGHT_ENC_A, "Правый энк.")
+        self.curent_speed = 0
+
+    def transform_value_control_speed(speed): # Преобразуем входные данные от джойстика -100 : 100 в данные заполнения PWM в соответствии с настройками мотора
+        if speed < 0:
+            # Исходный диапазон: -100..0
+            # Новый диапазон: -MAX_PWM..-MIN_PWM
+            return ((speed - (-MAX_PWM)) / (0 - (-MAX_PWM))) * (-MIN_PWM - (-MAX_PWM)) + (-MAX_PWM)
+        else:
+            # Исходный диапазон: 0..100
+            # Новый диапазон: MIN_PWM..MAX_PWM
+            return (speed / MAX_PWM) * (MAX_PWM - MIN_PWM) + MIN_PWM
+        
+    def move_robot(self, controlX, controlY):
+        speed_left = transform_value_control_speed(MAX_PWM * (controlY + controlX))    # преобразуем скорость робота,
+        speed_right = transform_value_control_speed(MAX_PWM * (controlY - controlX))    # в зависимости от положения джойстика
+        print(f'speed_left - {speed_left},\t speed_right - {speed_right}') # для отладки
+        self.left_motor.set_pwm_smooth(speed_left)
+        self.right_motor.set_pwm_smooth(speed_right)
+
+        # speedA = max(-MAX_PWM, min(speedA, MAX_PWM))    # функция аналогичная constrain в arduino
+        # speedB = max(-MAX_PWM, min(speedB, MAX_PWM))    # функция аналогичная constrain в arduino
+
+    
+    
+    def stop(self):
+        """Остановка"""
+        print("⏹ СТОП")
+        self.left_motor.stop()
+        self.right_motor.stop()
+
+
+
 class ControlServoCam:
     """
     Плавное управление сервой через pigpio
@@ -25,11 +81,11 @@ class ControlServoCam:
         self.speed_factor = speed_factor
         self.is_moving = False
         
-        # Подключаемся к pigpio демону
-        self.pi = pigpio.pi()
+        # # Подключаемся к pigpio демону
+        # self.pi = pigpio.pi()
         
-        if not self.pi.connected:
-            raise RuntimeError("Cannot connect to pigpio daemon. Run: sudo pigpiod")
+        # if not self.pi.connected:
+        #     raise RuntimeError("Cannot connect to pigpio daemon. Run: sudo pigpiod")
         
         # Устанавливаем начальный угол
         self._set_angle_direct(default_angle)
@@ -47,7 +103,7 @@ class ControlServoCam:
         """Непосредственная установка угла без плавности"""
         try:
             pulse_width = self._angle_to_pulsewidth(angle)
-            self.pi.set_servo_pulsewidth(self.servo_pin, pulse_width)
+            pi.set_servo_pulsewidth(self.servo_pin, pulse_width)
             self.current_angle = float(angle)
             return True
         except Exception as e:
@@ -129,7 +185,7 @@ class ControlServoCam:
                 
                 # Высокая точность импульса
                 pulse_width = self._angle_to_pulsewidth(current_angle)
-                self.pi.set_servo_pulsewidth(self.servo_pin, pulse_width)
+                pi.set_servo_pulsewidth(self.servo_pin, pulse_width)
                 
                 if i < steps:
                     # Микро-задержки для максимальной плавности
@@ -182,23 +238,23 @@ class ControlServoCam:
     def cleanup(self):
         """Безопасная очистка ресурсов"""
         try:
-            if hasattr(self, 'pi') and self.pi:
+            if pi:
                 # Ждем завершения движения
                 while self.is_moving:
                     time.sleep(0.01)
                 
                 # Отключаем серву
                 try:
-                    self.pi.set_servo_pulsewidth(self.servo_pin, 0)
+                    pi.set_servo_pulsewidth(self.servo_pin, 0)
                 except:
                     pass
                 
-                # Отключаемся от демона
-                try:
-                    self.pi.stop()
-                except:
-                    pass
+            #     # Отключаемся от демона
+            #     try:
+            #         pi.stop()
+            #     except:
+            #         pass
                 
-            print("Servo (pigpio) resources cleaned up")
+            # print("Servo (pigpio) resources cleaned up")
         except:
             pass

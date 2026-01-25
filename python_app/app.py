@@ -14,7 +14,7 @@ _cleaning_up = False
 
 # Импортируем наш новый модуль
 try:
-    from control_robot_pigpio import ControlServoCam
+    from control_robot_pigpio import *
     #from control_robot import ControlServoCam
     SERVO_AVAILABLE = True
 except ImportError as e:
@@ -31,6 +31,7 @@ camera = cv2.VideoCapture(0)  # веб камера
 controlX, controlY = 0, 0  # глобальные переменные положения джойстика с web-страницы
 servo_angle = 90  # глобальная переменная: угол сервопривода
 
+robot_chassis = RobotChassis() # создаем шасси нашего робота (левый, правый трак)
 # Инициализируем сервопривод (если доступен)
 servo_cam = None
 if SERVO_AVAILABLE:
@@ -77,6 +78,9 @@ def control():
     """ Пришел запрос на управления роботом """
     global controlX, controlY
     controlX, controlY = float(request.args.get('x')) / 100.0, float(request.args.get('y')) / 100.0
+    if not (controlX==0 and controlY==0): # если не стоим на месте отправляем кординаты джойстика на управление движением роботом
+        robot_chassis.move_robot(controlX, controlY)
+
     return '', 200, {'Content-Type': 'text/plain'}
 
 
@@ -192,7 +196,7 @@ def cleanup_resources():
             servo_cam.cleanup()
         except:
             pass  # Игнорируем ошибки при завершении
-    
+    cleanup() # Останавливаем PIGPIO
     print("Resources cleaned up")
 
 
@@ -235,11 +239,7 @@ if __name__ == '__main__':
         #     """ функция цикличной отправки пакетов по uart """
         #     global controlX, controlY
         #     while True:
-        #         speedA = maxAbsSpeed * (controlY + controlX)    # преобразуем скорость робота,
-        #         speedB = maxAbsSpeed * (controlY - controlX)    # в зависимости от положения джойстика
-
-        #         speedA = max(-maxAbsSpeed, min(speedA, maxAbsSpeed))    # функция аналогичная constrain в arduino
-        #         speedB = max(-maxAbsSpeed, min(speedB, maxAbsSpeed))    # функция аналогичная constrain в arduino
+        #        
 
         #         msg["speedA"], msg["speedB"] = speedScale * speedA, speedScale * speedB     # урезаем скорость и упаковываем
 
