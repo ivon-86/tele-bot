@@ -40,8 +40,9 @@ class RobotChassis:
             return int((speed / MAX_PWM) * (MAX_PWM - MIN_PWM) + MIN_PWM)
         
     def move_robot(self, controlX, controlY):
-        speed_left = self.transform_value_control_speed(MAX_PWM * (controlY + controlX))    # преобразуем скорость робота,
-        speed_right = self.transform_value_control_speed(MAX_PWM * (controlY - controlX))    # в зависимости от положения джойстика
+        
+        speed_left = self.transform_value_control_speed(max(-MAX_PWM, min(MAX_PWM * (controlY + controlX), MAX_PWM)))    # преобразуем скорость робота,
+        speed_right = self.transform_value_control_speed(max(-MAX_PWM, min(MAX_PWM * (controlY - controlX), MAX_PWM)))    # в зависимости от положения джойстика
         print(f'speed_left - {speed_left},\t speed_right - {speed_right}') # для отладки
         self.left_motor.set_pwm_smooth(speed_left)
         self.right_motor.set_pwm_smooth(speed_right)
