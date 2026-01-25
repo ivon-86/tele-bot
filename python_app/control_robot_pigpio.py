@@ -33,11 +33,11 @@ class RobotChassis:
         if speed < 0:
             # Исходный диапазон: -100..0
             # Новый диапазон: -MAX_PWM..-MIN_PWM
-            return ((speed - (-MAX_PWM)) / (0 - (-MAX_PWM))) * (-MIN_PWM - (-MAX_PWM)) + (-MAX_PWM)
+            return int(((speed - (-MAX_PWM)) / (0 - (-MAX_PWM))) * (-MIN_PWM - (-MAX_PWM)) + (-MAX_PWM))
         else:
             # Исходный диапазон: 0..100
             # Новый диапазон: MIN_PWM..MAX_PWM
-            return (speed / MAX_PWM) * (MAX_PWM - MIN_PWM) + MIN_PWM
+            return int((speed / MAX_PWM) * (MAX_PWM - MIN_PWM) + MIN_PWM)
         
     def move_robot(self, controlX, controlY):
         speed_left = transform_value_control_speed(MAX_PWM * (controlY + controlX))    # преобразуем скорость робота,
