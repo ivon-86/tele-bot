@@ -25,9 +25,9 @@ LEFT_ENC_B = 27        # GPIO27 (S2 левого мотора)
 
 # НАСТРОЙКИ ШИМ
 PWM_FREQUENCY = 400    # Частота ШИМ в Гц
-MAX_PWM = 85           # Максимальный ШИМ в % (ограничиваем ток)
+MAX_PWM = 100           # Максимальный ШИМ в % (ограничиваем ток)
 MIN_PWM = 30           # Минимальный рабочий ШИМ
-START_PWM = 30         # Стартовый ШИМ ?
+
 
 
 # Настройки плавного старта
@@ -132,6 +132,14 @@ class Motor:
         
         return pwm_value
     
+    def brake(self):
+        """Торможение (короткое замыкание обмоток)"""
+        pi.write(self.in1_pin, 1)
+        pi.write(self.in2_pin, 1)
+        pi.set_PWM_dutycycle(self.pwm_pin, 0)
+        self.current_pwm = 0
+        print(f"{self.name}: ТОРМОЖЕНИЕ")
+
     def set_pwm_smooth(self, target_pwm):
         """Защищенное изменение скорости с ограничением скорости изменения"""
         current_time = time.time()
@@ -149,11 +157,11 @@ class Motor:
         else:
             new_pwm = target_pwm
         
-        # Дополнительная защита при резкой смене направления
-        if (self.current_pwm > 0 and new_pwm < -20) or (self.current_pwm < 0 and new_pwm > 20):
-            # При резкой смене направления сначала тормозим
-            self._apply_pwm_direct(0)
-            time.sleep(0.05)  # Короткая пауза
+        # # Дополнительная защита при резкой смене направления
+        # if (self.current_pwm > 0 and new_pwm < -20) or (self.current_pwm < 0 and new_pwm > 20):
+        #     # При резкой смене направления сначала тормозим
+        #     self._apply_pwm_direct(0)
+        #     time.sleep(0.05)  # Короткая пауза
         
         self._apply_pwm_direct(new_pwm)
         self.current_pwm = new_pwm
@@ -165,8 +173,8 @@ class Motor:
     
     def stop(self):
         """Остановка"""
-        self._apply_pwm_direct(0)
-        
+        #self._apply_pwm_direct(0)
+        self.brake()
     
     def brake(self):
         """Торможение"""
