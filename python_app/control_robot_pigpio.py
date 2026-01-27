@@ -42,7 +42,7 @@ class RobotChassis:
         
     def move_robot(self, controlX, controlY):
         
-        controlX //= controlX
+        controlX //= 2
         speed_left = self.transform_value_control_speed(max(-MAX_PWM, min(MAX_PWM * (controlY + controlX), MAX_PWM)))    # преобразуем скорость робота,
         speed_right = self.transform_value_control_speed(max(-MAX_PWM, min(MAX_PWM * (controlY - controlX), MAX_PWM)))    # в зависимости от положения джойстика
         print(f'speed_left - {speed_left},\t speed_right - {speed_right}') # для отладки
