@@ -87,7 +87,9 @@ class Motor:
         self.in2_pin = in2_pin
         self.name = name
         self.current_pwm = 0
-        
+        self.last_change_time = time.time()
+        self.change_rate_limit = 50  # Максимальное изменение PWM в секунду
+
         # Настройка пинов
         pi.set_mode(pwm_pin, pigpio.OUTPUT)
         pi.set_mode(in1_pin, pigpio.OUTPUT)
@@ -131,30 +133,33 @@ class Motor:
         return pwm_value
     
     def set_pwm_smooth(self, target_pwm):
-        """Плавная установка заполнения PWM"""
-        current = self.current_pwm
-        target = target_pwm
+        """Защищенное изменение скорости с ограничением скорости изменения"""
+        current_time = time.time()
+        time_diff = current_time - self.last_change_time
         
-        if current == target:
-            return
+        # Максимальное изменение за этот промежуток времени
+        max_allowed_change = self.change_rate_limit * time_diff
         
-        # Определяем направление и количество шагов
-        if target > current:
-            step = SMOOTH_STEP
+        # Ограничиваем изменение
+        if abs(target_pwm - self.current_pwm) > max_allowed_change:
+            if target_pwm > self.current_pwm:
+                new_pwm = self.current_pwm + max_allowed_change
+            else:
+                new_pwm = self.current_pwm - max_allowed_change
         else:
-            step = -SMOOTH_STEP
+            new_pwm = target_pwm
         
-        # Вычисляем количество шагов
-        steps = abs(current - target) // abs(step)
-        if steps >= 2:
-            # Плавное изменение
-            for i in range(steps):
-                new_pwm = current + step
-                self._apply_pwm_direct(new_pwm)
-                time.sleep(SMOOTH_DELAY) #      задержку без delay? !!!!!
+        # Дополнительная защита при резкой смене направления
+        if (self.current_pwm > 0 and new_pwm < -20) or (self.current_pwm < 0 and new_pwm > 20):
+            # При резкой смене направления сначала тормозим
+            self._apply_pwm_direct(0)
+            time.sleep(0.05)  # Короткая пауза
         
-        # Финальная установка точного значения
-        self._apply_pwm_direct(target)
+        self._apply_pwm_direct(new_pwm)
+        self.current_pwm = new_pwm
+        self.last_change_time = current_time
+        
+        return new_pwm
     
    
     
