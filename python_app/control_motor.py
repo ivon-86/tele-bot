@@ -88,7 +88,7 @@ class Motor:
         self.name = name
         self.current_pwm = 0
         self.last_change_time = time.time()
-        self.change_rate_limit = 50  # Максимальное изменение PWM в секунду
+        self.change_rate_limit = 100  # Максимальное изменение PWM в секунду
 
         # Настройка пинов
         pi.set_mode(pwm_pin, pigpio.OUTPUT)
@@ -141,31 +141,31 @@ class Motor:
         print(f"{self.name}: ТОРМОЖЕНИЕ")
 
     def set_pwm_smooth(self, target_pwm):
-        """Защищенное изменение скорости с ограничением скорости изменения"""
+        """Быстрое изменение скорости с защитой от перегрузки"""
+        # Сразу применяем целевое значение, но с ограничением скорости изменения
         current_time = time.time()
-        time_diff = current_time - self.last_change_time
+        time_diff = max(0.001, current_time - self.last_change_time)  # избегаем деления на 0
         
         # Максимальное изменение за этот промежуток времени
-        max_allowed_change = self.change_rate_limit * time_diff
+        max_change = self.change_rate_limit * time_diff
         
-        # Ограничиваем изменение
-        if abs(target_pwm - self.current_pwm) > max_allowed_change:
-            if target_pwm > self.current_pwm:
-                new_pwm = self.current_pwm + max_allowed_change
-            else:
-                new_pwm = self.current_pwm - max_allowed_change
-        else:
-            new_pwm = target_pwm
+        # Вычисляем новое значение с учетом ограничения
+        delta = target_pwm - self.current_pwm
+        if abs(delta) > max_change:
+            delta = max_change if delta > 0 else -max_change
         
-        # # Дополнительная защита при резкой смене направления
-        # if (self.current_pwm > 0 and new_pwm < -20) or (self.current_pwm < 0 and new_pwm > 20):
-        #     # При резкой смене направления сначала тормозим
-        #     self._apply_pwm_direct(0)
-        #     time.sleep(0.05)  # Короткая пауза
+        new_pwm = self.current_pwm + delta
         
+        # НЕМЕДЛЕННО применяем новое значение
         self._apply_pwm_direct(new_pwm)
+        
+        # Обновляем состояние
         self.current_pwm = new_pwm
         self.last_change_time = current_time
+        
+        # Для отладки
+        if delta != (target_pwm - self.current_pwm):
+            print(f"{self.name}: limited change {target_pwm-self.current_pwm:.1f} -> {delta:.1f}")
         
         return new_pwm
     
