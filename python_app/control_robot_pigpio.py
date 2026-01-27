@@ -28,7 +28,7 @@ class RobotChassis:
         self.left_encoder = EncoderCounter(LEFT_ENC_A, "Левый энк.")
         self.right_encoder = EncoderCounter(RIGHT_ENC_A, "Правый энк.")
         self.curent_speed = 0
-
+        self.limit_speed_tern = 2 # во сколько раз ограничиваем скорость разворота
     
     def transform_value_control_speed(self, speed): # Преобразуем входные данные от джойстика -100 : 100 в данные заполнения PWM в соответствии с настройками мотора
         if speed < 0:
@@ -42,10 +42,13 @@ class RobotChassis:
         
     def move_robot(self, controlX, controlY):
         
-        controlX //= 2
+        
         speed_left = self.transform_value_control_speed(max(-MAX_PWM, min(MAX_PWM * (controlY + controlX), MAX_PWM)))    # преобразуем скорость робота,
         speed_right = self.transform_value_control_speed(max(-MAX_PWM, min(MAX_PWM * (controlY - controlX), MAX_PWM)))    # в зависимости от положения джойстика
         print(f'speed_left - {speed_left},\t speed_right - {speed_right}') # для отладки
+        if (speed_left < 0 and speed_right > 0) or (speed_left > 0 and speed_right < 0): # если делаем разворот то ограничиваем скорость
+            speed_right //= self.limit_speed_tern
+            speed_left //= self.limit_speed_tern
         self.left_motor.set_pwm_smooth(speed_left)
         self.right_motor.set_pwm_smooth(speed_right)
 
