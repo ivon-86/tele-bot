@@ -29,6 +29,7 @@ class RobotChassis:
         self.right_encoder = EncoderCounter(RIGHT_ENC_A, "Правый энк.")
         self.curent_speed = 0
 
+    
     def transform_value_control_speed(self, speed): # Преобразуем входные данные от джойстика -100 : 100 в данные заполнения PWM в соответствии с настройками мотора
         if speed < 0:
             # Исходный диапазон: -100..0
@@ -41,6 +42,7 @@ class RobotChassis:
         
     def move_robot(self, controlX, controlY):
         
+        controlX //= controlX
         speed_left = self.transform_value_control_speed(max(-MAX_PWM, min(MAX_PWM * (controlY + controlX), MAX_PWM)))    # преобразуем скорость робота,
         speed_right = self.transform_value_control_speed(max(-MAX_PWM, min(MAX_PWM * (controlY - controlX), MAX_PWM)))    # в зависимости от положения джойстика
         print(f'speed_left - {speed_left},\t speed_right - {speed_right}') # для отладки
@@ -53,7 +55,7 @@ class RobotChassis:
     def stop_robot(self):
         self.left_motor.stop()
         self.right_motor.stop()
-        
+
     
     
     def stop(self):

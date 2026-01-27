@@ -123,8 +123,9 @@ class Motor:
             pwm_value = max(MIN_PWM, -pwm)
         else:
             # СТОП
-            pi.write(self.in1_pin, 0)
-            pi.write(self.in2_pin, 0)
+            # pi.write(self.in1_pin, 0)
+            # pi.write(self.in2_pin, 0)
+            self.brake()
             pwm_value = 0
         
         # Установка ШИМ
